@@ -704,5 +704,13 @@ def export_csv(table):
 db.init_db()
 
 if __name__ == "__main__":
+    import threading
+    import webbrowser
+
     db.backup()  # automatic backup every time the program starts
-    app.run(host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", 5000)))
+    port = int(os.environ.get("PORT", 5000))
+    print(f"\n  {GARAGE_NAME} is running at http://127.0.0.1:{port}")
+    print("  Keep this window open while you use the program.\n")
+    if not os.environ.get("NO_BROWSER"):
+        threading.Timer(1.5, webbrowser.open, (f"http://127.0.0.1:{port}",)).start()
+    app.run(host=os.environ.get("HOST", "127.0.0.1"), port=port)
