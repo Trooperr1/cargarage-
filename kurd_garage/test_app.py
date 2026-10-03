@@ -371,6 +371,7 @@ class Website(Base):
         self.post(f"/website/cars/{self.one('SELECT MAX(id) FROM web_cars')}", make="Audi", model="A3 Sportback",
                   price="12345", status="sold")
         self.assertIn(b'"status": "sold"', self.get("/website/preview/data/cars.js").data)
+        self.post(f"/website/cars/{self.one('SELECT MAX(id) FROM web_cars')}/delete")
 
     def test_upgrade_old_database(self):
         """A version-2 database (before the website section) is upgraded without losing data."""
