@@ -6,7 +6,8 @@ from core import audit, checkbox, choice, error, form, get_db, login_required, o
 
 bp = Blueprint("appointments", __name__, url_prefix="/appointments")
 
-SQL = """SELECT a.*, c.display_name AS customer, c.mobile, c.phone, v.plate, v.make, v.model,
+SQL = """SELECT a.*, c.display_name AS customer, COALESCE(c.mobile, a.contact_phone) AS mobile, c.phone, c.email,
+                v.plate, v.make, v.model,
                 e.full_name AS employee
          FROM appointments a LEFT JOIN customers c ON c.id = a.customer_id
          LEFT JOIN vehicles v ON v.id = a.vehicle_id LEFT JOIN employees e ON e.id = a.employee_id"""

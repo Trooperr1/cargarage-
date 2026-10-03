@@ -1,6 +1,7 @@
 import csv
 import io
 import os
+import sqlite3
 import tempfile
 import uuid
 from datetime import date
@@ -9,8 +10,8 @@ from flask import Blueprint, Response, abort, redirect, render_template, request
 from werkzeug.security import generate_password_hash
 
 import db
-from core import (admin_required, audit, checkbox, error, form, get_db, login_required, ok, or_404, q, to_num,
-                  to_rappen)
+from core import (admin_required, audit, checkbox, error, form, get_db, login_required, ok, or_404, q, to_int,
+                  to_num, to_rappen)
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -193,6 +194,88 @@ def export_csv(table):
     writer.writerows(cur.fetchall())
     return Response("﻿" + out.getvalue(), mimetype="text/csv",
                     headers={"Content-Disposition": f"attachment; filename={table}_{date.today()}.csv"})
+
+
+IMPORT_COLUMNS = ["company", "salutation", "first_name", "last_name", "street", "house_number", "postcode", "city",
+                  "mobile", "phone", "email", "notes", "plate", "make", "model", "year", "vin", "mileage", "mfk_next"]
+
+
+@bp.route("/import/template.csv")
+@admin_required
+def import_template():
+    out = io.StringIO()
+    w = csv.writer(out, delimiter=";")
+    w.writerow(IMPORT_COLUMNS)
+    w.writerow(["", "Mr", "Hans", "Muster", "Dorfstrasse", "5", "3000", "Bern", "079 123 45 67", "", "hans@example.ch",
+                "", "BE 12345", "Volkswagen", "Golf", "2018", "", "85000", "2027-05-31"])
+    return Response("\ufeff" + out.getvalue(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment; filename=import_template.csv"})
+
+
+@bp.route("/import", methods=["GET", "POST"])
+@admin_required
+def import_data():
+    """Import customers (and their vehicles) from a CSV file saved from Excel."""
+    if request.method == "GET":
+        return render_template("import.html", columns=IMPORT_COLUMNS, report=None)
+    from views.vehicles import normalise_plate
+    upload = request.files.get("file")
+    if not upload or not upload.filename:
+        error("Choose a CSV file")
+        return redirect(url_for("admin.import_data"))
+    raw = upload.read()
+    for enc in ("utf-8-sig", "cp1252", "latin-1"):
+        try:
+            text = raw.decode(enc)
+            break
+        except UnicodeDecodeError:
+            continue
+    dialect = ";" if text.split("\n", 1)[0].count(";") >= text.split("\n", 1)[0].count(",") else ","
+    reader = csv.DictReader(io.StringIO(text), delimiter=dialect)
+    reader.fieldnames = [(h or "").strip().lower().replace(" ", "_") for h in (reader.fieldnames or [])]
+    conn = get_db()
+    report = {"customers": 0, "vehicles": 0, "skipped": [], "existing": 0}
+    for n, row in enumerate(reader, start=2):
+        r = {k: (row.get(k) or "").strip() or None for k in IMPORT_COLUMNS}
+        if not (r["company"] or r["last_name"] or r["first_name"]):
+            report["skipped"].append(f"line {n}: no name")
+            continue
+        if not (r["mobile"] or r["phone"] or r["email"]):
+            report["skipped"].append(f"line {n}: no phone or e-mail")
+            continue
+        try:
+            existing = conn.execute(
+                """SELECT id FROM customers WHERE COALESCE(company,'') = COALESCE(?, '') AND COALESCE(last_name,'') = COALESCE(?, '')
+                   AND COALESCE(first_name,'') = COALESCE(?, '') AND (mobile = ? OR phone = ? OR email = ?)""",
+                (r["company"], r["last_name"], r["first_name"], r["mobile"], r["phone"], r["email"])).fetchone()
+            if existing:
+                cid = existing[0]
+                report["existing"] += 1
+            else:
+                cid = conn.execute(
+                    """INSERT INTO customers (kind, salutation, company, first_name, last_name, street, house_number,
+                       postcode, city, mobile, phone, email, notes, source) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'Import')""",
+                    ("company" if r["company"] else "private",
+                     r["salutation"] if r["salutation"] in ("Mr", "Ms", "Family", "Company") else None,
+                     r["company"], r["first_name"], r["last_name"], r["street"], r["house_number"], r["postcode"],
+                     r["city"], r["mobile"], r["phone"], (r["email"] or "").lower() or None, r["notes"])).lastrowid
+                report["customers"] += 1
+            if r["make"] and r["model"]:
+                plate = normalise_plate(r["plate"])
+                if plate and conn.execute("SELECT 1 FROM vehicles WHERE plate = ?", (plate,)).fetchone():
+                    report["skipped"].append(f"line {n}: plate {plate} already exists")
+                else:
+                    conn.execute(
+                        """INSERT INTO vehicles (customer_id, plate, make, model, year, vin, mileage, mfk_next)
+                           VALUES (?,?,?,?,?,?,?,?)""",
+                        (cid, plate, r["make"], r["model"], to_int(r["year"]), (r["vin"] or "").upper() or None,
+                         to_int(r["mileage"]), r["mfk_next"] if r["mfk_next"] and len(r["mfk_next"]) == 10 else None))
+                    report["vehicles"] += 1
+        except (ValueError, sqlite3.IntegrityError) as err:
+            report["skipped"].append(f"line {n}: {err}")
+    audit("import", "customer", None, f"{report['customers']} customers, {report['vehicles']} vehicles")
+    conn.commit()
+    return render_template("import.html", columns=IMPORT_COLUMNS, report=report)
 
 
 @bp.route("/log")

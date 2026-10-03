@@ -2,7 +2,7 @@
 {% block content %}
 <div class="titlebar"><h1>Reports <span class="muted small">{{ start|d }} – {{ end|d }}</span></h1>
 <div><a class="btn light" href="{{ url_for('reports.vat', start=start, end=end) }}">VAT / MWST</a> <a class="btn light" href="{{ url_for('reports.receivables') }}">Receivables</a>
-<a class="btn light" href="{{ url_for('reports.stock') }}">Stock</a> <a class="btn light" href="{{ url_for('reports.payments_csv', start=start, end=end) }}">Payments CSV</a></div></div>
+<a class="btn light" href="{{ url_for('reports.cash', start=start, end=end) }}">Cash book</a> <a class="btn light" href="{{ url_for('reports.stock') }}">Stock</a> <a class="btn light" href="{{ url_for('reports.payments_csv', start=start, end=end) }}">Payments CSV</a></div></div>
 {% include "_period.html" %}
 <div class="stats">
   <div class="stat"><b>{{ revenue.net|chf }}</b><span>Revenue excl. VAT ({{ revenue.n }} invoices)</span></div>

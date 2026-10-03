@@ -134,6 +134,30 @@ def stock():
     return render_template("report_stock.html", rows=rows, total=sum(r["value"] for r in rows))
 
 
+@bp.route("/cash")
+@login_required
+def cash():
+    """Cash book (Kassenbuch): cash received and cash paid out, with running balance."""
+    start, end = period()
+    rows = q("""SELECT p.paid_on AS day, 'in' AS dir, p.amount, 'Invoice ' || n.number || ' ' || c.display_name AS text
+                FROM payments p JOIN invoices n ON n.id = p.invoice_id JOIN customers c ON c.id = n.customer_id
+                WHERE p.method = 'cash' AND p.paid_on BETWEEN ? AND ?
+                UNION ALL
+                SELECT x.spent_on, 'out', x.amount, x.category || ': ' || x.description
+                FROM expenses x WHERE x.method = 'cash' AND x.spent_on BETWEEN ? AND ?
+                ORDER BY 1, 2""", (start, end, start, end))
+    opening = q1("""SELECT COALESCE((SELECT SUM(amount) FROM payments WHERE method = 'cash' AND paid_on < ?), 0)
+                         - COALESCE((SELECT SUM(amount) FROM expenses WHERE method = 'cash' AND spent_on < ?), 0)""",
+                 (start, start))
+    lines, balance = [], opening
+    for r in rows:
+        balance += r["amount"] if r["dir"] == "in" else -r["amount"]
+        lines.append({**dict(r), "balance": balance})
+    return render_template("report_cash.html", start=start, end=end, lines=lines, opening=opening, closing=balance,
+                           total_in=sum(r["amount"] for r in rows if r["dir"] == "in"),
+                           total_out=sum(r["amount"] for r in rows if r["dir"] == "out"))
+
+
 @bp.route("/payments.csv")
 @login_required
 def payments_csv():

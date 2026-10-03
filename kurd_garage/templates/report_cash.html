@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="titlebar"><h1>Cash book <span class="muted small">{{ start|d }} – {{ end|d }}</span></h1><button class="no-print" onclick="window.print()">🖨 Print</button></div>
+{% include "_period.html" %}
+<p class="muted small">Only cash: payments with method “cash” and expenses paid “cash”. Count the money in the till and compare with the balance.</p>
+<div class="stats">
+  <div class="stat"><b>{{ opening|chf }}</b><span>Opening balance</span></div>
+  <div class="stat good"><b>{{ total_in|chf }}</b><span>Cash in</span></div>
+  <div class="stat warn"><b>{{ total_out|chf }}</b><span>Cash out</span></div>
+  <div class="stat"><b>{{ closing|chf }}</b><span>Should be in the till</span></div>
+</div>
+<div class="tablewrap"><table><tr><th>Date</th><th>Text</th><th class="num">In</th><th class="num">Out</th><th class="num">Balance</th></tr>
+{% for l in lines %}<tr><td>{{ l.day|d }}</td><td>{{ l.text }}</td><td class="num">{{ l.amount|chf(false) if l.dir == 'in' else '' }}</td>
+<td class="num">{{ l.amount|chf(false) if l.dir == 'out' else '' }}</td><td class="num">{{ l.balance|chf(false) }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No cash movements in this period.</td></tr>{% endfor %}</table></div>
+{% endblock %}

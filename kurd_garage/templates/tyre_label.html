@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Tyre labels {{ t.plate or '' }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="paper">
+<p class="no-print"><button onclick="window.print()">🖨 Print 4 labels</button> One label per wheel.</p>
+<div class="labels">
+{% for pos in ['Front left', 'Front right', 'Rear left', 'Rear right'] %}
+<div class="label">
+  <div class="label-place">{{ t.location or '—' }}</div>
+  <div class="plate big">{{ t.plate or 'no plate' }}</div>
+  <div><b>{{ t.customer }}</b> {{ t.mobile or t.phone or '' }}</div>
+  <div>{{ t.make }} {{ t.car_model }}</div>
+  <div>{{ t.season|upper }} · {{ t.brand or '' }} {{ t.size or '' }} {{ ('· ' ~ t.rims) if t.rims }}</div>
+  <div class="small">{{ pos }} · stored {{ t.stored_at|d }}</div>
+</div>
+{% endfor %}
+</div>
+</body></html>

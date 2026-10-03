@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge, contact, files_block, check with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge, contact, files_block, check, send, hello, sign_off with context %}
 {% block content %}
 {% set is_locked = job.invoice_id is not none %}
 <div class="titlebar">
@@ -26,6 +26,17 @@
     <p>{{ contact(customer) }}</p>{% if customer.email %}<p class="small"><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>{% endif %}
     {% if customer.discount_pct %}<p class="small">Standard discount {{ customer.discount_pct|qty }}% (applied to new lines)</p>{% endif %}
     {% if customer.notes %}<p class="small muted">{{ customer.notes }}</p>{% endif %}
+    {% set car = vehicle.make ~ ' ' ~ vehicle.model ~ ((' (' ~ vehicle.plate ~ ')') if vehicle.plate else '') %}
+    {% if job.status == 'quote' %}
+      <p class="small"><b>Send quote:</b> {{ send(customer, 'Quote for your ' ~ car,
+        hello(customer) ~ ',\n\nhere is our quote for your ' ~ car ~ ': ' ~ job.complaint ~ '\nTotal ' ~ totals.total|chf ~ (' incl. VAT' if S.vat_registered == '1' else '') ~ '.\nPlease reply to confirm the work.' ~ sign_off()) }}</p>
+    {% elif job.status in ('done', 'delivered') %}
+      <p class="small"><b>Car ready:</b> {{ send(customer, 'Your ' ~ car ~ ' is ready',
+        hello(customer) ~ ',\n\nyour ' ~ car ~ ' is ready for pickup.' ~ ((' Total: ' ~ totals.total|chf ~ '.') if totals.total) ~ '\nOpening hours: please call us if needed.' ~ sign_off()) }}</p>
+    {% else %}
+      <p class="small"><b>Ask for approval:</b> {{ send(customer, 'Your ' ~ car,
+        hello(customer) ~ ',\n\nwhile working on your ' ~ car ~ ' we found the following:\n\n\nMay we do this work? Please reply or call us.' ~ sign_off()) }}</p>
+    {% endif %}
   </div>
   <div class="card">
     <h3>Money</h3>

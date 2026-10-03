@@ -7,11 +7,11 @@
 <button type="button" class="light no-print" onclick="window.print()">🖨 Print list</button></form>
 <div class="tablewrap"><table><tr><th>Place</th><th>Vehicle</th><th>Customer</th><th>Season</th><th>Tyre</th><th>Size</th><th>DOT</th><th>Tread mm</th><th>Since</th><th></th></tr>
 {% for t in rows %}{% set minimum = [t.tread_fl, t.tread_fr, t.tread_rl, t.tread_rr]|reject('none')|min if [t.tread_fl, t.tread_fr, t.tread_rl, t.tread_rr]|reject('none')|list else none %}
-<tr><td><b>{{ t.location or '—' }}</b></td><td><a href="{{ url_for('vehicles.view', vid=t.vehicle_id) }}#tyres">{{ t.plate or '—' }}</a> {{ t.make }}</td>
+<tr><td><b>{{ t.location or '—' }}</b></td><td><a href="{{ url_for('vehicles.view', vid=t.vehicle_id) }}#tyres">{{ t.plate or "—" }}</a> {{ t.make }} {{ t.car_model }}</td>
 <td>{{ t.customer }}<div class="small">{{ contact(t) }}</div></td><td>{{ t.season }}</td><td>{{ t.brand or '' }} {{ t.model or '' }} <span class="muted small">{{ t.rims or '' }}</span></td>
 <td>{{ t.size or '' }}</td><td>{{ t.dot or '' }}</td>
 <td class="{{ 'owed' if minimum is not none and minimum < min_tread[t.season] }}">{{ t.tread_fl|qty }}/{{ t.tread_fr|qty }}/{{ t.tread_rl|qty }}/{{ t.tread_rr|qty }}</td>
-<td>{{ t.stored_at|d }}</td><td><a href="{{ url_for('tyres.edit', tid=t.id) }}">edit</a></td></tr>
+<td>{{ t.stored_at|d }}</td><td><a href="{{ url_for('tyres.edit', tid=t.id) }}">edit</a> · <a href="{{ url_for('tyres.label', tid=t.id) }}" target="_blank">label</a></td></tr>
 {% else %}<tr><td colspan="10" class="muted">No tyre sets.</td></tr>{% endfor %}</table></div>
 <p class="small muted">Red tread = below legal minimum 1.6 mm (summer) or recommended 4 mm (winter). Tell the customer!</p>
 {% endblock %}

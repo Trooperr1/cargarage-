@@ -1,8 +1,10 @@
 """Kurd Garage - garage management system for Switzerland (Flask + SQLite)."""
 import os
 import sqlite3
+from datetime import timedelta
 
-from flask import Flask, abort, flash, g, request, session
+from flask import Flask, abort, flash, g, render_template, request, session
+from werkzeug.exceptions import HTTPException
 
 import core
 import db
@@ -14,12 +16,13 @@ app.config["SECRET_KEY"] = os.environ.get("KURD_GARAGE_SECRET") or db.secret_key
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # uploads up to 25 MB
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)   # log out automatically after 12 hours
 
 for module in (auth, dashboard, customers, vehicles, jobs, invoices, parts, appointments, tyres, staff,
                expenses, reports, admin):
     app.register_blueprint(module.bp)
 
-app.jinja_env.filters.update(chf=core.chf, money_in=core.rappen_input, qty=core.qty, d=core.swiss_date, km=core.km, iban=core.iban,
+app.jinja_env.filters.update(chf=core.chf, money_in=core.rappen_input, qty=core.qty, d=core.swiss_date, km=core.km, iban=core.iban, intl=core.phone_intl,
                              days_until=core.days_until)
 
 
@@ -74,6 +77,20 @@ def database_error(err):
     return core.back()
 
 
+@app.errorhandler(HTTPException)
+def http_error(err):
+    if err.code == 413:
+        flash("The file is too big (maximum 25 MB).", "error")
+        return core.back()
+    return render_template("error.html", code=err.code, message=err.description), err.code
+
+
+@app.errorhandler(Exception)
+def unexpected_error(err):
+    app.logger.exception("Unexpected error")
+    return render_template("error.html", code=500, message=f"{type(err).__name__}: {err}"), 500
+
+
 @app.errorhandler(ValueError)
 def value_error(err):
     flash(str(err), "error")
@@ -94,4 +111,9 @@ if __name__ == "__main__":
     print("  Keep this window open while you use the program.\n")
     if not os.environ.get("NO_BROWSER"):
         threading.Timer(1.5, webbrowser.open, (f"http://127.0.0.1:{port}",)).start()
-    app.run(host=os.environ.get("HOST", "127.0.0.1"), port=port)
+    host = os.environ.get("HOST", "127.0.0.1")
+    try:
+        from waitress import serve   # stable multi-user server
+        serve(app, host=host, port=port, threads=8)
+    except ImportError:
+        app.run(host=host, port=port)

@@ -29,6 +29,9 @@ def index():
         "month_invoiced": q1("SELECT COALESCE(SUM(subtotal),0) FROM invoices WHERE status='issued' AND substr(issue_date,1,7) = ?", (month,)),
         "open": q1("SELECT COALESCE(SUM(open_amount),0) FROM invoice_balance WHERE status='issued'"),
         "overdue": q1("SELECT COALESCE(SUM(open_amount),0) FROM invoice_balance WHERE status='issued' AND open_amount > 0 AND effective_due < ?", (t,)),
+        "uninvoiced": q1("SELECT COUNT(*) FROM jobs j WHERE j.status IN ('done','delivered') AND NOT EXISTS "
+                         "(SELECT 1 FROM invoices WHERE job_id = j.id AND status = 'issued') "
+                         "AND EXISTS (SELECT 1 FROM job_items WHERE job_id = j.id)"),
         "tyres": q1("SELECT COUNT(*) FROM tyre_sets WHERE status = 'stored'"),
     }
     appts = q("""SELECT a.*, c.display_name AS customer, v.plate, e.full_name AS employee FROM appointments a
@@ -38,11 +41,11 @@ def index():
     jobs = q(JOB_LIST_SQL + f" WHERE j.status IN {active[:-1]},'done') ORDER BY j.promised_at IS NULL, j.promised_at, j.id")
     mfk = q("""SELECT v.*, c.display_name AS customer, c.mobile, c.phone, c.email FROM vehicles v
                JOIN customers c ON c.id = v.customer_id
-               WHERE v.active = 1 AND v.mfk_next IS NOT NULL AND v.mfk_next <= date('now','localtime', ?)
+               WHERE v.active = 1 AND c.reminders_ok = 1 AND v.mfk_next IS NOT NULL AND v.mfk_next <= date('now','localtime', ?)
                ORDER BY v.mfk_next LIMIT 15""", (f"+{warn} days",))
     service = q("""SELECT v.*, c.display_name AS customer, c.mobile, c.phone FROM vehicles v
                    JOIN customers c ON c.id = v.customer_id
-                   WHERE v.active = 1 AND v.service_next_date IS NOT NULL AND v.service_next_date <= date('now','localtime','+30 days')
+                   WHERE v.active = 1 AND c.reminders_ok = 1 AND v.service_next_date IS NOT NULL AND v.service_next_date <= date('now','localtime','+30 days')
                    ORDER BY v.service_next_date LIMIT 15""")
     overdue = q("""SELECT b.*, c.display_name AS customer FROM invoice_balance b JOIN customers c ON c.id = b.customer_id
                    WHERE b.status = 'issued' AND b.open_amount > 0 AND b.effective_due < ? ORDER BY b.effective_due LIMIT 15""", (t,))

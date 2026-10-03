@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>Import customers & vehicles from Excel</h1>
+{% if report %}
+<div class="card"><h2>Result</h2>
+<p>✔ <b>{{ report.customers }}</b> new customers · <b>{{ report.vehicles }}</b> new vehicles · {{ report.existing }} customers already existed</p>
+{% if report.skipped %}<p class="owed">Skipped {{ report.skipped|length }} lines:</p><ul class="compact small">{% for s in report.skipped %}<li>{{ s }}</li>{% endfor %}</ul>{% endif %}
+<a class="btn" href="{{ url_for('customers.index') }}">See customers</a></div>
+{% endif %}
+<div class="card">
+  <ol>
+    <li><a href="{{ url_for('admin.import_template') }}">Download the template</a> and open it in Excel.</li>
+    <li>Put one customer per line (one line per vehicle — repeat the customer for a second car). Keep the first line (column names).</li>
+    <li>In Excel: <b>File → Save as → CSV (semicolon or comma separated)</b>.</li>
+    <li>Upload the file here.</li>
+  </ol>
+  <p class="small muted">Columns: {{ columns|join(', ') }}. Every line needs a name and a phone or e-mail. Dates as YYYY-MM-DD.
+  Lines that already exist (same name and phone) are not created twice, so you can import the same file again safely.</p>
+  <form method="post" enctype="multipart/form-data" class="row">{{ csrf_field() }}
+    <input type="file" name="file" accept=".csv,text/csv" required><button>Import</button>
+  </form>
+  <p class="small muted">Tip: make a backup first (Admin → Make backup now).</p>
+</div>
+{% endblock %}

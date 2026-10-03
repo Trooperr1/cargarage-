@@ -15,11 +15,12 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 | **Jobs & quotes** | Quote → job, check-in (km, fuel level, existing damage), promised time, customer waiting, mechanic, standard services, labour hours, parts (by list, part number or barcode), other items, per-line discount and VAT, findings, recommendations, internal notes, time tracking, photos, copy job, printable job card and quote |
 | **Invoices** | Sequential numbers (2026-0001), frozen after issue (can only be cancelled), 5-Rappen rounding, VAT breakdown, **QR-bill (IBAN or QR-IBAN)**, partial payments (cash, card, TWINT, bank transfer), payment reminders 1–3 with fees, print/PDF |
 | **Parts & stock** | Part no., EAN, brand, category, unit (pc/l/kg/m/set), supplier, cost/sell price and margin, stock with automatic movements, deliveries, corrections, stock counts, order list per supplier, stock value report |
-| **Tyre hotel** | Sets per vehicle (summer/winter), brand, size, DOT, rims, tread depth ×4 with legal-minimum warning, storage place (no double use), one-click seasonal change |
+| **Tyre hotel** | Sets per vehicle (summer/winter), brand, size, DOT, rims, tread depth ×4 with legal-minimum warning, storage place (no double use), one-click seasonal change, printable labels for the 4 wheels |
 | **Staff** | Mechanics with role and hourly cost, time per job, hours worked vs billed (efficiency), monthly view |
 | **Expenses** | Categories, supplier, VAT included, receipts as photo/PDF |
-| **Reports** | Revenue, labour/parts split, profit estimate, per month, per mechanic, best customers, top services/parts, makes, **VAT/MWST report per quarter**, receivables with ageing, stock value, payments CSV |
-| **Admin** | Garage settings (address, IBAN, UID, VAT rate, hourly rate, fees), logins (admin/staff), standard services, activity log, backup/restore, Excel export |
+| **Reports** | Revenue, labour/parts split, profit estimate, per month, per mechanic, best customers, top services/parts, makes, **VAT/MWST report per quarter**, receivables with ageing, **cash book (Kassenbuch)**, stock value, payments CSV |
+| **Messages** | One-click **WhatsApp / SMS / e-mail** with ready text: car ready, quote, ask for approval, MFK and service reminders, appointment confirmation, payment reminder |
+| **Admin** | Garage settings (address, IBAN, UID, VAT rate, hourly rate, fees), logins (admin/staff), standard services, activity log, backup/restore, Excel export, **import customers & vehicles from Excel** |
 
 ## Data safety
 
@@ -31,6 +32,7 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 - **Crash safe** (WAL journal, full sync) — a power cut does not corrupt data.
 - **Activity log**: every change records who did it and when.
 - **Automatic backups**: every start and every day, as a ZIP (database + photos), last 60 kept.
+- Login is blocked for 15 minutes after 5 wrong passwords; automatic logout after 12 hours.
 - Passwords are hashed; all forms are protected against CSRF; staff logins cannot open Admin.
 
 ## Install & run (Windows)

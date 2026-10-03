@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge, send, hello, sign_off with context %}
 {% block content %}
 <div class="titlebar"><h1>Invoice {{ inv.number }}
 {% if inv.status == 'cancelled' %}{{ status_badge('cancelled') }}{% elif inv.open_amount <= 0 %}{{ status_badge('paid') }}{% elif inv.effective_due < today %}{{ status_badge('overdue') }}{% else %}{{ status_badge('open') }}{% endif %}</h1>
@@ -7,7 +7,9 @@
 {% if inv.status == 'cancelled' %}<p class="flash error">Cancelled {{ inv.cancelled_at|d }}: {{ inv.cancel_reason }}</p>{% endif %}
 <div class="grid3">
   <div class="card"><h3>Bill to</h3><p>{{ inv.bill_to|replace('\n', '<br>'|safe) }}</p>
-  <p><a href="{{ url_for('customers.view', cid=inv.customer_id) }}">open customer</a></p></div>
+  <p><a href="{{ url_for('customers.view', cid=inv.customer_id) }}">open customer</a></p>
+  {% if inv.status == 'issued' and inv.open_amount > 0 %}<p class="small"><b>Payment reminder:</b> {{ send(customer, 'Invoice ' ~ inv.number,
+    hello(customer) ~ ',\n\nour invoice ' ~ inv.number ~ ' of ' ~ inv.issue_date|d ~ ' (' ~ inv.open_amount|chf ~ ') is still open. It was due on ' ~ inv.effective_due|d ~ '.\nPlease pay it soon' ~ ((' to IBAN ' ~ S.iban|iban) if S.iban else '') ~ '. If you have already paid, thank you and please ignore this message.' ~ sign_off()) }}</p>{% endif %}</div>
   <div class="card"><h3>Amounts</h3>
     <table class="totals">
       <tr><td>Net</td><td class="num">{{ inv.subtotal|chf }}</td></tr>
@@ -38,6 +40,7 @@
 <form method="post" action="{{ url_for('invoices.remind', iid=inv.id) }}" class="card">{{ csrf_field() }}
   <h2>📨 Payment reminder</h2>
   {% if next_level <= 3 %}
+  {% if inv.effective_due >= today %}<p class="small owed">Note: this invoice is not overdue yet (due {{ inv.effective_due|d }}).</p>{% endif %}
   <p>Next: <b>reminder {{ next_level }}</b>{% if next_level == 1 %} (friendly, no fee){% endif %}. New payment deadline: {{ S.reminder_days }} days.</p>
   <label>Reminder fee CHF<input name="fee" value="{{ next_fee|money_in }}" inputmode="decimal"></label>
   <button>Create & print reminder {{ next_level }}</button>

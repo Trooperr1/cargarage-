@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table, contact, due_badge, files_block, status_badge with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table, contact, due_badge, files_block, status_badge, send, sign_off with context %}
 {% block content %}
 <div class="titlebar"><h1><span class="plate big">{{ row.plate or 'no plate' }}</span> {{ row.make }} {{ row.model }} <span class="muted">{{ row.variant or '' }}</span>{% if not row.active %} <span class="badge">inactive</span>{% endif %}</h1>
 <div><a class="btn" href="{{ url_for('jobs.new', vid=row.id) }}">+ New job</a>
@@ -13,6 +13,11 @@
     <h3>Owner</h3>
     <p><a href="{{ url_for('customers.view', cid=row.customer_id) }}"><b>{{ row.owner }}</b></a></p>
     <p>{{ contact(row) }}</p>{% if row.email %}<p><a href="mailto:{{ row.email }}">✉ {{ row.email }}</a></p>{% endif %}
+    {% set car = row.make ~ ' ' ~ row.model ~ ((' (' ~ row.plate ~ ')') if row.plate else '') %}
+    {% if row.mfk_next %}<p class="small"><b>MFK reminder:</b> {{ send(row, 'MFK for your ' ~ car,
+      'Hello ' ~ row.owner ~ ',\n\nthe MFK (vehicle inspection) for your ' ~ car ~ ' is due on ' ~ row.mfk_next|d ~ '.\nWe can prepare your car and take it to the inspection for you. Shall we book an appointment?' ~ sign_off()) }}</p>{% endif %}
+    {% if row.service_next_date or row.service_next_km %}<p class="small"><b>Service reminder:</b> {{ send(row, 'Service for your ' ~ car,
+      'Hello ' ~ row.owner ~ ',\n\nyour ' ~ car ~ ' is due for its service' ~ ((' on ' ~ row.service_next_date|d) if row.service_next_date else '') ~ ((' or at ' ~ row.service_next_km|km) if row.service_next_km else '') ~ '.\nShall we book an appointment?' ~ sign_off()) }}</p>{% endif %}
   </div>
   <div class="card">
     <h3>Vehicle data</h3>
@@ -49,7 +54,7 @@
 <div class="tablewrap"><table><tr><th>Season</th><th>Tyre</th><th>Size</th><th>DOT</th><th>Rims</th><th>Tread mm (FL/FR/RL/RR)</th><th>Status</th><th>Place</th><th></th></tr>
 {% for t in tyres %}<tr><td>{{ t.season }}</td><td>{{ t.brand or '' }} {{ t.model or '' }}</td><td>{{ t.size or '' }}</td><td>{{ t.dot or '' }}</td><td>{{ t.rims or '' }}</td>
 <td>{{ t.tread_fl|qty }} / {{ t.tread_fr|qty }} / {{ t.tread_rl|qty }} / {{ t.tread_rr|qty }}</td><td>{{ status_badge(t.status) }}</td><td>{{ t.location or '' }}</td>
-<td><a href="{{ url_for('tyres.edit', tid=t.id) }}">edit</a></td></tr>
+<td><a href="{{ url_for('tyres.edit', tid=t.id) }}">edit</a> · <a href="{{ url_for('tyres.label', tid=t.id) }}" target="_blank">label</a></td></tr>
 {% else %}<tr><td colspan="9" class="muted">No tyre sets recorded.</td></tr>{% endfor %}</table></div>
 {% set stored = tyres|selectattr('status', 'equalto', 'stored')|list %}
 {% set mounted = tyres|selectattr('status', 'equalto', 'on vehicle')|list %}

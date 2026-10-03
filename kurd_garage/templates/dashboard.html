@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import job_table, contact, due_badge with context %}
+{% extends "base.html" %}{% from "_macros.html" import job_table, contact, due_badge, send, sign_off with context %}
 {% block content %}
 <div class="titlebar"><h1>Dashboard <span class="muted small">{{ today|d }}</span></h1>
   <div><a class="btn" href="{{ url_for('customers.edit') }}">+ New customer</a>
@@ -8,6 +8,7 @@
 <div class="stats">
   <a class="stat" href="{{ url_for('jobs.index', status='active') }}"><b>{{ stats.in_work }}</b><span>Vehicles in work</span></a>
   <a class="stat good" href="{{ url_for('jobs.index', status='done') }}"><b>{{ stats.ready }}</b><span>Ready for pickup</span></a>
+  <a class="stat {{ 'warn' if stats.uninvoiced }}" href="{{ url_for('jobs.index', status='uninvoiced') }}"><b>{{ stats.uninvoiced }}</b><span>Finished, not invoiced</span></a>
   <a class="stat" href="{{ url_for('jobs.index', status='quote') }}"><b>{{ stats.quotes }}</b><span>Open quotes</span></a>
   <div class="stat"><b>{{ stats.today_in|chf }}</b><span>Received today</span></div>
   <div class="stat"><b>{{ stats.month_invoiced|chf }}</b><span>Invoiced this month (net)</span></div>
@@ -33,7 +34,8 @@
   <div class="card tight">
   {% if tyre_season %}<p>🛞 <b>Tyre season!</b> {{ stats.tyres }} sets in the tyre hotel. <a href="{{ url_for('tyres.index') }}">Open tyre hotel</a></p>{% endif %}
   {% if overdue %}<p><b>💸 Overdue invoices</b></p><ul class="compact">{% for i in overdue %}<li><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a> {{ i.customer }} — {{ i.open_amount|chf }} {% if i.dunning_level %}<span class="muted">(reminder {{ i.dunning_level }})</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
-  {% if mfk %}<p><b>🚦 MFK due soon</b></p><ul class="compact">{% for v in mfk %}<li><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or v.make }}</a> {{ v.customer }} — {{ due_badge(v.mfk_next) }} {{ contact(v) }}</li>{% endfor %}</ul>{% endif %}
+  {% if mfk %}<p><b>🚦 MFK due soon</b></p><ul class="compact">{% for v in mfk %}<li><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or v.make }}</a> {{ v.customer }} — {{ due_badge(v.mfk_next) }}
+    {{ send(v, 'MFK for your ' ~ v.make ~ ' ' ~ v.model, 'Hello ' ~ v.customer ~ ',\n\nthe MFK (vehicle inspection) for your ' ~ v.make ~ ' ' ~ v.model ~ ((' (' ~ v.plate ~ ')') if v.plate else '') ~ ' is due on ' ~ v.mfk_next|d ~ '.\nWe can prepare your car and take it to the inspection for you. Shall we book an appointment?' ~ sign_off()) }}</li>{% endfor %}</ul>{% endif %}
   {% if service %}<p><b>🛠 Service due</b></p><ul class="compact">{% for v in service %}<li><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or v.make }}</a> {{ v.customer }} — {{ due_badge(v.service_next_date) }} {{ contact(v) }}</li>{% endfor %}</ul>{% endif %}
   {% if low %}<p><b>📦 Low stock</b> — <a href="{{ url_for('parts.order_list') }}">order list</a></p><ul class="compact">{% for p in low %}<li><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a> — {{ p.quantity|qty }} {{ p.unit }} left</li>{% endfor %}</ul>{% endif %}
   {% if not (overdue or mfk or service or low or tyre_season) %}<p class="muted">Nothing to remind. 👍</p>{% endif %}

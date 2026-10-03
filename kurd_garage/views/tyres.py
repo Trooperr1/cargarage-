@@ -15,7 +15,7 @@ MIN_TREAD = {"summer": 1.6, "winter": 4.0, "all-season": 4.0}   # legal minimum 
 def index():
     status = request.args.get("status", "stored")
     term = request.args.get("q", "").strip()
-    sql = """SELECT t.*, v.plate, v.make, v.model, c.display_name AS customer, c.mobile, c.phone
+    sql = """SELECT t.*, v.plate, v.make, v.model AS car_model, c.display_name AS customer, c.mobile, c.phone
              FROM tyre_sets t JOIN vehicles v ON v.id = t.vehicle_id JOIN customers c ON c.id = v.customer_id
              WHERE (? = 'all' OR t.status = ?)"""
     args = [status, status]
@@ -85,3 +85,12 @@ def swap(vid):
     conn.commit()
     ok("Tyres changed over")
     return redirect(url_for("vehicles.view", vid=vid) + "#tyres")
+
+
+@bp.route("/<int:tid>/label")
+@login_required
+def label(tid):
+    t = or_404(q("""SELECT t.*, v.plate, v.make, v.model AS car_model, c.display_name AS customer, c.mobile, c.phone
+                    FROM tyre_sets t JOIN vehicles v ON v.id = t.vehicle_id JOIN customers c ON c.id = v.customer_id
+                    WHERE t.id = ?""", (tid,), one=True))
+    return render_template("tyre_label.html", t=t)

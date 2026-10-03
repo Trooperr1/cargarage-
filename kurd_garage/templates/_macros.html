@@ -100,3 +100,16 @@
   <div class="right"><h2>{{ title }}</h2>{% if number %}<div><b>{{ number }}</b></div>{% endif %}{% if date %}<div>{{ date }}</div>{% endif %}</div>
 </div>
 {% endmacro %}
+
+{% macro send(c, subject, text, label='Send message') -%}
+{% set phone = c.mobile or c.phone %}
+<span class="send no-print">
+  {% if phone %}<a class="btn small wa" target="_blank" href="https://wa.me/{{ phone|intl }}?text={{ text|urlencode }}" title="{{ label }} by WhatsApp">WhatsApp</a>
+  <a class="btn small light" href="sms:+{{ phone|intl }}?body={{ text|urlencode }}" title="{{ label }} by SMS">SMS</a>{% endif %}
+  {% if c.email %}<a class="btn small light" href="mailto:{{ c.email }}?subject={{ subject|urlencode }}&body={{ text|urlencode }}" title="{{ label }} by e-mail">E-mail</a>{% endif %}
+</span>
+{%- endmacro %}
+
+{% macro sign_off() %}{{ '\n\n' ~ S.garage_name ~ (('\n' ~ S.phone) if S.phone else '') }}{% endmacro %}
+
+{% macro hello(c) %}{% if c.kind == 'company' %}Hello{% if c.contact_person %} {{ c.contact_person }}{% endif %}{% elif c.salutation == 'Ms' %}Dear Ms {{ c.last_name or '' }}{% elif c.salutation == 'Mr' %}Dear Mr {{ c.last_name or '' }}{% else %}Hello {{ c.first_name or c.last_name or '' }}{% endif %}{% endmacro %}

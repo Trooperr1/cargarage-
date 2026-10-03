@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, check with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, check, send, sign_off with context %}
 {% block content %}
 <h1>{{ 'Appointment' if row else 'New appointment' }}</h1>
 <form method="post" class="card">{{ csrf_field() }}
@@ -24,6 +24,8 @@
   {% if row and row.vehicle_id and not row.job_id %}<a class="btn light" href="{{ url_for('jobs.new', vid=row.vehicle_id, appointment=row.id) }}">Vehicle arrived → open job</a>{% endif %}
   {% if row and row.job_id %}<a class="btn light" href="{{ url_for('jobs.view', jid=row.job_id) }}">Open job #{{ row.job_id }}</a>{% endif %}
 </form>
+{% if row and row.status == 'booked' %}<p><b>Send confirmation:</b> {{ send(row, 'Your appointment at ' ~ S.garage_name,
+  'Hello ' ~ (row.customer or row.contact_name or '') ~ ',\n\nwe confirm your appointment on ' ~ row.starts_at|d ~ ' for: ' ~ row.title ~ ((' (' ~ row.plate ~ ')') if row.plate else '') ~ '.' ~ ((' Address: ' ~ S.street ~ ' ' ~ S.house_number ~ ', ' ~ S.postcode ~ ' ' ~ S.city ~ '.') if S.street) ~ '\nIf you cannot come, please let us know.' ~ sign_off()) }}</p>{% endif %}
 {% if row %}<form method="post" action="{{ url_for('appointments.delete', aid=row.id) }}" onsubmit="return confirm('Delete appointment?')">{{ csrf_field() }}<button class="danger small">Delete appointment</button></form>{% endif %}
 <datalist id="titles">{% for t in ['Service','Oil service','MFK preparation','MFK','Tyre change','Brakes','Diagnosis','Air conditioning service','Repair'] %}<option value="{{ t }}">{% endfor %}</datalist>
 {% endblock %}

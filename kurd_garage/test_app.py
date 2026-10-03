@@ -282,5 +282,70 @@ class Rules(Base):
         self.assertEqual(c.get("/").status_code, 200)
 
 
+class NewFeatures(Base):
+    def test_messages_cash_labels_import_errors(self):
+        r = self.post("/customers/new", salutation="Ms", first_name="Sara", last_name="Ahmed", mobile="079 555 66 77",
+                      email="sara@example.ch", reminders_ok="1")
+        cid = self.new_id(r)
+        r = self.post(f"/vehicles/new/{cid}", make="Toyota", model="Yaris", plate="LU 777", mfk_next=core.plus_days(10))
+        vid = self.new_id(r)
+        # WhatsApp links with Swiss number converted to +41
+        r = self.get(f"/vehicles/{vid}")
+        self.assertIn(b"https://wa.me/41795556677", r.data)
+        self.assertIn(b"MFK reminder", r.data)
+        self.assertIn(b"wa.me/41795556677", self.get("/").data)
+        r = self.post(f"/jobs/new/{vid}", complaint="Check engine light")
+        jid = self.new_id(r)
+        self.post(f"/jobs/{jid}/items", kind="other", description="Diagnosis", unit_price="80")
+        self.post(f"/jobs/{jid}/update", status="done", complaint="Check engine light")
+        self.assertIn(b"Car ready", self.get(f"/jobs/{jid}").data)
+        self.assertIn(b"Finished, not invoiced", self.get("/").data)
+        r = self.post(f"/invoices/create/{jid}")
+        inv = self.new_id(r)
+        self.assertIn(b"Payment reminder", self.get(f"/invoices/{inv}").data)
+        self.post(f"/invoices/{inv}/pay", amount="50", method="cash")
+        self.post("/expenses/", spent_on=core.today(), category="office", description="Coffee", amount="12.50",
+                  vat_rate="0", method="cash")
+        r = self.get("/reports/cash")
+        self.assertIn(b"CHF 37.50", r.data)          # 50.00 in - 12.50 out
+        # tyre label
+        self.post(f"/tyres/new/{vid}", season="winter", status="stored", location="C-3")
+        tid = self.one("SELECT id FROM tyre_sets WHERE vehicle_id=?", vid)
+        self.assertIn(b"C-3", self.get(f"/tyres/{tid}/label").data)
+        # appointment confirmation
+        self.post("/appointments/new", day=core.today(), time="10:00", vehicle_id=str(vid), title="Service")
+        aid = self.one("SELECT MAX(id) FROM appointments")
+        self.assertIn(b"Send confirmation", self.get(f"/appointments/{aid}").data)
+        # import from Excel CSV (semicolon, Windows encoding)
+        csv_text = ("first_name;last_name;mobile;plate;make;model;year;mfk_next\n"
+                    "Jürg;Müller;078 111 22 33;zg 4455;Škoda;Octavia;2017;2027-04-30\n"
+                    "Jürg;Müller;078 111 22 33;ZG 4456;Audi;A4;2015;\n"
+                    ";;;;;;;\n"
+                    "Nophone;Person;;;;;;\n").encode("cp1252", errors="replace")
+        r = self.post("/admin/import", files={"file": (io.BytesIO(csv_text), "customers.csv")})
+        self.assertIn(b"<b>1</b> new customers", r.data)
+        self.assertIn(b"<b>2</b> new vehicles", r.data)
+        self.assertEqual(self.one("SELECT plate FROM vehicles WHERE make='Audi'"), "ZG 4456")
+        self.get("/admin/import/template.csv")
+        # friendly errors
+        r = self.c.get("/customers/99999")
+        self.assertEqual(r.status_code, 404)
+        self.assertIn(b"Page not found", r.data)
+        r = self.post("/admin/restore", files={"file": (io.BytesIO(b"junk"), "x.zip")}, confirm="RESTORE")
+        self.assertIn(b"not a Kurd Garage backup", r.data)
+
+    def test_login_lockout(self):
+        c = garage.app.test_client()
+        c.get("/login")
+        with c.session_transaction() as s:
+            tok = s["csrf"]
+        for _ in range(5):
+            c.post("/login", data={"username": "admin", "password": "wrong", "csrf": tok})
+        r = c.post("/login", data={"username": "admin", "password": "admin123", "csrf": tok}, follow_redirects=True)
+        self.assertIn(b"Too many wrong passwords", r.data)
+        self.conn.execute("DELETE FROM audit_log WHERE action = 'login_failed'")
+        self.conn.commit()
+
+
 if __name__ == "__main__":
     unittest.main()

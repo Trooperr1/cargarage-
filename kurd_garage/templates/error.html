@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card narrow">
+  {% if code == 404 %}<h1>Page not found</h1><p>This page or record does not exist (maybe it was deleted).</p>
+  {% elif code == 403 %}<h1>Not allowed</h1><p>Only an admin can do this.</p>
+  {% elif code == 400 %}<h1>Something went wrong</h1><p>{{ message }}</p>
+  {% else %}<h1>Sorry, an error happened</h1><p>Nothing was saved. Please take a photo of this page and send it for help.</p><p class="small muted">{{ message }}</p>{% endif %}
+  <p><a class="btn light" href="javascript:history.back()">◀ Back</a> <a class="btn" href="{{ url_for('dashboard.index') }}">Dashboard</a></p>
+</div>
+{% endblock %}

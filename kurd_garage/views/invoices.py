@@ -92,8 +92,9 @@ def view(iid):
     dunning = q("SELECT * FROM dunning WHERE invoice_id = ? ORDER BY level", (iid,))
     next_level = (dunning[-1]["level"] + 1) if dunning else 1
     fee = setting_int(f"reminder_fee_{next_level}", 0) if next_level > 1 else 0
+    customer = q("SELECT * FROM customers WHERE id = ?", (inv["customer_id"],), one=True)
     return render_template("invoice_view.html", inv=inv, payments=payments, dunning=dunning, next_level=next_level,
-                           next_fee=fee, breakdown=vat_breakdown(inv))
+                           next_fee=fee, breakdown=vat_breakdown(inv), customer=customer)
 
 
 @bp.route("/<int:iid>/pay", methods=["POST"])

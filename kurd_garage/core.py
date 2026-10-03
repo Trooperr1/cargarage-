@@ -159,6 +159,18 @@ def qty(value):
     return f"{value:g}" if value != int(value) else str(int(value))
 
 
+def phone_intl(value):
+    """'079 123 45 67' -> '41791234567' (for WhatsApp / SMS links)."""
+    digits = "".join(ch for ch in (value or "") if ch.isdigit())
+    if (value or "").strip().startswith("+"):
+        return digits
+    if digits.startswith("00"):
+        return digits[2:]
+    if digits.startswith("0"):
+        return "41" + digits[1:]
+    return digits
+
+
 def iban(value):
     value = (value or "").replace(" ", "")
     return " ".join(value[i:i + 4] for i in range(0, len(value), 4))

@@ -162,6 +162,8 @@ def list_backups():
 
 def restore(zip_path):
     """Replace all data with the content of a backup ZIP. A safety backup is made first."""
+    if not zipfile.is_zipfile(zip_path):
+        raise ValueError("This is not a Kurd Garage backup file.")
     with tempfile.TemporaryDirectory() as tmp:
         with zipfile.ZipFile(zip_path) as z:
             names = z.namelist()
