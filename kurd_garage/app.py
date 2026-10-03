@@ -16,6 +16,7 @@ app.config["SECRET_KEY"] = os.environ.get("KURD_GARAGE_SECRET") or db.secret_key
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024   # uploads up to 25 MB
+app.config["PHONE_MODE"] = os.environ.get("HOST") == "0.0.0.0"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)   # log out automatically after 12 hours
 
 for module in (auth, dashboard, customers, vehicles, jobs, invoices, parts, appointments, tyres, staff,
@@ -112,6 +113,9 @@ if __name__ == "__main__":
     if not os.environ.get("NO_BROWSER"):
         threading.Timer(1.5, webbrowser.open, (f"http://127.0.0.1:{port}",)).start()
     host = os.environ.get("HOST", "127.0.0.1")
+    if host == "0.0.0.0":
+        print(f"  PHONE: open  http://{core.local_ip()}:{port}  on a phone in the same Wi-Fi")
+        print("  (or log in on this computer and click the phone icon to scan a QR code)\n")
     try:
         from waitress import serve   # stable multi-user server
         serve(app, host=host, port=port, threads=8)

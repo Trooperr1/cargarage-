@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📱 Open on your phone</h1>
+<div class="grid2">
+<div class="card center">
+  {% if enabled %}
+    <div class="qr">{{ svg }}</div>
+    <p>Scan with the phone camera, or type:<br><b class="big-number">{{ url }}</b></p>
+    <p class="small muted">Tip: on the phone, choose “Add to Home screen” in the browser menu. Then it opens like an app.</p>
+  {% else %}
+    <p class="owed"><b>Phone access is OFF.</b></p>
+    <p>Close the program and start it with <b>start_phone.bat</b> (in the kurd_garage folder) instead of start_windows.bat.<br>
+    After that you can use the new desktop icon <b>“Kurd Garage + phone”</b>.</p>
+  {% endif %}
+</div>
+<div class="card">
+  <h3>How it works</h3>
+  <ol>
+    <li>The phone must be in the <b>same Wi-Fi</b> as this computer.</li>
+    <li>This computer must be <b>on</b> and the black window <b>open</b>.</li>
+    <li>The first time, Windows asks “Allow access?” → tick <b>Private networks</b> → <b>Allow access</b>.</li>
+    <li>If the phone can't connect: in Windows open Settings → Network → your Wi-Fi → set it to <b>Private network</b>.</li>
+    <li>Log in on the phone with your normal username and password.</li>
+  </ol>
+  <p class="small muted">Away from the garage (mobile data, at home) this does not work. That needs an extra tool — ask if you want it.</p>
+</div>
+</div>
+{% endblock %}

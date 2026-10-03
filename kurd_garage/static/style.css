@@ -154,3 +154,4 @@ td.checkbox { width: 26px; font-size: 16px; } td.count-box { width: 80px; border
 .labels { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
 .label { border: 2px dashed #555; border-radius: 8px; padding: 6mm; font-size: 15px; line-height: 1.6; page-break-inside: avoid; }
 .label-place { font-size: 34px; font-weight: 900; color: var(--brand); }
+.qr svg { width: 260px; height: 260px; max-width: 100%; }

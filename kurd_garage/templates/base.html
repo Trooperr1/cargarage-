@@ -26,7 +26,7 @@
     {% if session.role == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin') }}">Admin</a>{% endif %}
   </nav>
   <form class="search" action="{{ url_for('dashboard.search') }}"><input name="q" placeholder="Search name, phone, plate, VIN, invoice…" value="{{ request.args.q if request.endpoint == 'dashboard.search' else '' }}"></form>
-  <span class="user">{{ session.name }} · <a href="{{ url_for('auth.password') }}">password</a> · <a href="{{ url_for('auth.logout') }}">logout</a></span>
+  <span class="user"><a href="{{ url_for('dashboard.phone') }}" title="Open on phone">📱 phone</a> · {{ session.name }} · <a href="{{ url_for('auth.password') }}">password</a> · <a href="{{ url_for('auth.logout') }}">logout</a></span>
 </header>
 {% endif %}
 <main>

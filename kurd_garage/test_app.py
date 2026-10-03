@@ -358,6 +358,16 @@ class NewFeatures(Base):
         self.post(f"/jobs/counter/{cid}")
         self.assertEqual(self.one("SELECT COUNT(*) FROM vehicles WHERE customer_id=?", cid), 1)
 
+    def test_phone_page(self):
+        self.assertIn(b"Phone access is OFF", self.get("/phone").data)
+        garage.app.config["PHONE_MODE"] = True
+        try:
+            r = self.get("/phone")
+            self.assertIn(b"<svg", r.data)
+            self.assertIn(b":", r.data)
+        finally:
+            garage.app.config["PHONE_MODE"] = False
+
     def test_login_lockout(self):
         c = garage.app.test_client()
         c.get("/login")

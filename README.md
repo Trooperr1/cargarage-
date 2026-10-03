@@ -46,8 +46,7 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 
 Linux / Mac: run `./kurd_garage/start.sh`.
 
-To use it from other computers or phones in the garage (same Wi-Fi), start it with `HOST=0.0.0.0`
-(Windows: `set HOST=0.0.0.0` before running) and open `http://<this-computer-IP>:5000`.
+**On a phone / other computers (same Wi-Fi):** start with `start_phone.bat` instead (creates a desktop icon "Kurd Garage + phone"). Then click **📱 phone** at the top of the program and scan the QR code with the phone. The first time, Windows asks to allow access: tick *Private networks* → *Allow*.
 
 ## Where the data lives
 

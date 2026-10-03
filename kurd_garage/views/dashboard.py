@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import Blueprint, render_template, request
 
+import core
 import db
 from core import ACTIVE_STATUSES, login_required, q, q1, setting_int, today
 from views.jobs import JOB_LIST_SQL
@@ -54,6 +55,24 @@ def index():
     tyre_season = month_now in (3, 4, 10, 11)
     return render_template("dashboard.html", stats=stats, appts=appts, jobs=jobs, mfk=mfk, service=service,
                            overdue=overdue, low=low, tyre_season=tyre_season)
+
+
+@bp.route("/phone")
+@login_required
+def phone():
+    """QR code to open the program on a phone in the same Wi-Fi."""
+    import io
+
+    import qrcode
+    import qrcode.image.svg
+    from flask import current_app
+    from markupsafe import Markup
+    url = f"http://{core.local_ip()}:{request.host.rsplit(':', 1)[-1] if ':' in request.host else 5000}"
+    out = io.BytesIO()
+    qrcode.make(url, image_factory=qrcode.image.svg.SvgPathImage, box_size=12).save(out)
+    svg = out.getvalue().decode()
+    svg = Markup(svg[svg.index("<svg"):])
+    return render_template("phone.html", url=url, svg=svg, enabled=current_app.config.get("PHONE_MODE"))
 
 
 @bp.route("/search")

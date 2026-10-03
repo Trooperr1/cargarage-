@@ -11,8 +11,12 @@ if not exist .venv\Scripts\python.exe (
     echo Installing, please wait...
     .venv\Scripts\python -m pip install -r requirements.txt || goto error
 )
-rem Create / update the "Kurd Garage" icon on the desktop
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Kurd Garage.lnk');$s.TargetPath='%~dp0start_windows.bat';$s.WorkingDirectory='%~dp0';$s.IconLocation='%SystemRoot%\System32\shell32.dll,12';$s.Save()" >nul 2>nul
+rem Create / update the desktop icon ("Kurd Garage" or "Kurd Garage + phone")
+set SC_NAME=Kurd Garage
+set SC_FILE=start_windows.bat
+if "%HOST%"=="0.0.0.0" set SC_NAME=Kurd Garage + phone
+if "%HOST%"=="0.0.0.0" set SC_FILE=start_phone.bat
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\%SC_NAME%.lnk');$s.TargetPath='%~dp0%SC_FILE%';$s.WorkingDirectory='%~dp0';$s.IconLocation='%SystemRoot%\System32\shell32.dll,12';$s.Save()" >nul 2>nul
 .venv\Scripts\python app.py
 :error
 echo.

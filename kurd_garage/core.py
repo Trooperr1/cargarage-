@@ -159,6 +159,19 @@ def qty(value):
     return f"{value:g}" if value != int(value) else str(int(value))
 
 
+def local_ip():
+    """This computer's address in the local Wi-Fi network (e.g. 192.168.1.20)."""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("10.255.255.255", 1))   # no data is sent
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except OSError:
+        return "127.0.0.1"
+
+
 def phone_intl(value):
     """'079 123 45 67' -> '41791234567' (for WhatsApp / SMS links)."""
     digits = "".join(ch for ch in (value or "") if ch.isdigit())
