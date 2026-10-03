@@ -16,7 +16,13 @@ A fast, modern website with separate pages:
 No server, no database, no monthly software costs — just files. Orders, bookings and
 questions arrive on your **WhatsApp** (or e-mail).
 
-## Change the content
+## Easiest: change it in the garage program
+
+In the Kurd Garage program click **Website**. Add cars with photos, choose shop parts, change prices,
+texts and opening hours — then **Build website** and **Put online**. No code needed.
+The files in `data/` below are only the examples used when you open this folder directly.
+
+## Change the content by hand (optional)
 
 Open the files in the `data` folder with Notepad (right-click → Open with → Notepad):
 

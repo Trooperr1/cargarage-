@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>📦 Parts in the online shop</h1>
+{% include "_web_tabs.html" %}
+<p class="muted">These are your normal parts from <a href="{{ url_for('parts.index') }}">Parts & stock</a>. Tick “online” for the parts customers can order on the website.
+Price online = your sell price + {{ vat|qty }}% VAT. Stock is shown automatically.</p>
+<div class="toolbar">
+  <span class="tabs"><a href="{{ url_for('website.parts') }}" class="{{ 'on' if not show }}">all</a><a href="{{ url_for('website.parts', show='online') }}" class="{{ 'on' if show == 'online' }}">online</a><a href="{{ url_for('website.parts', show='offline') }}" class="{{ 'on' if show == 'offline' }}">not online</a></span>
+  <form method="post" action="{{ url_for('website.parts_all') }}" class="inline">{{ csrf_field() }}<input type="hidden" name="value" value="1"><button class="light small">Show all online</button></form>
+  <form method="post" action="{{ url_for('website.parts_all') }}" class="inline">{{ csrf_field() }}<input type="hidden" name="value" value="0"><button class="light small">Hide all</button></form>
+</div>
+{% for p in rows %}<form method="post" enctype="multipart/form-data" id="f{{ p.id }}" action="{{ url_for('website.parts', show=show) }}">{{ csrf_field() }}<input type="hidden" name="id" value="{{ p.id }}"></form>{% endfor %}
+<div class="tablewrap"><table><tr><th>Online</th><th>Part</th><th class="num">Price online</th><th class="num">Stock</th><th>Shop category</th><th>Fits which cars</th><th>Photo</th><th></th></tr>
+{% for p in rows %}<tr id="p{{ p.id }}" class="{{ '' if p.web_show else 'muted' }}">
+<td><input form="f{{ p.id }}" type="checkbox" name="web_show" value="1" {{ 'checked' if p.web_show }}></td>
+<td><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a><div class="small muted">{{ p.brand or '' }} {{ p.part_number }}</div></td>
+<td class="num">{{ ((p.sell_price * (100 + vat) / 100 / 5)|round * 5)|int|chf }}</td>
+<td class="num">{{ p.quantity|qty }}</td>
+<td><select form="f{{ p.id }}" name="web_category">{% for c in cats %}<option value="{{ c[0] }}" {{ 'selected' if (p.web_category or 'other') == c[0] }}>{{ c[1] }} {{ c[2] }}</option>{% endfor %}</select></td>
+<td><input form="f{{ p.id }}" name="web_fits" value="{{ p.web_fits or '' }}" placeholder="e.g. VW Golf 7, Audi A3"></td>
+<td>{% if p.web_image %}<img class="thumb-sm" src="{{ url_for('website.photo', name=p.web_image) }}" alt="">{% endif %}<input form="f{{ p.id }}" type="file" name="image" accept="image/*" class="file-sm"></td>
+<td><button form="f{{ p.id }}" class="small">Save</button></td></tr>
+{% else %}<tr><td colspan="8" class="muted">No parts yet. Add them under Parts & stock first.</td></tr>{% endfor %}</table></div>
+{% endblock %}

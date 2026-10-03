@@ -282,6 +282,102 @@ class Rules(Base):
         self.assertEqual(c.get("/").status_code, 200)
 
 
+class Website(Base):
+    def test_website_admin_and_build(self):
+        import json
+        import zipfile
+        from PIL import Image
+        img = io.BytesIO()
+        Image.new("RGB", (3000, 2000), (200, 30, 40)).save(img, "JPEG")
+        # car with photos
+        r = self.post("/website/cars/new", make="Audi", model="A4 Avant 2.0 TDI", year="2018", km="95000",
+                      price="22'900", fuel="Diesel", gearbox="Automatic", power_ps="150", status="available", is_new="1",
+                      features="Navigation\nLeather", description="Top", color_hex="#111111",
+                      files={"photos": [(io.BytesIO(img.getvalue()), "a.jpg"), (io.BytesIO(img.getvalue()), "b.jpg")]})
+        car_id = self.new_id(r)
+        self.assertIn(b"2 new photo", r.data)
+        photos = self.conn.execute("SELECT stored_name FROM web_car_photos WHERE car_id=? ORDER BY sort", (car_id,)).fetchall()
+        self.assertEqual(len(photos), 2)
+        with Image.open(os.path.join(db.UPLOAD_DIR, photos[0][0])) as im:
+            self.assertLessEqual(max(im.size), 1600)       # made smaller for the web
+        second = self.one("SELECT id FROM web_car_photos WHERE car_id=? ORDER BY sort DESC LIMIT 1", car_id)
+        self.post(f"/website/cars/{car_id}/photos/{second}/main")
+        self.assertEqual(self.one("SELECT id FROM web_car_photos WHERE car_id=? ORDER BY sort LIMIT 1", car_id), second)
+        r = self.post("/website/cars/new", make="", model="", price="")
+        self.assertIn(b"Make, model and price are required", r.data)
+        self.post("/website/cars/new", make="Ford", model="Ka", price="3000", status="hidden")
+        r = self.post("/website/cars/new", make="Fiat", model="Panda", price="5000", status="sold")
+        # part in shop
+        r = self.post("/parts/new", part_number="H7-WEB", name="H7 bulb", sell_price="10", quantity="4")
+        pid = self.new_id(r)
+        self.post("/website/parts?show=", id=str(pid), web_show="1", web_category="lights", web_fits="All H7")
+        self.assertEqual(self.one("SELECT web_show FROM parts WHERE id=?", pid), 1)
+        # services & settings
+        r = self.post("/website/services", name="Car wash", icon="🧽", price="30", time="1 h", sort="99")
+        self.post("/website/settings", web_slogan="Best garage", web_intro="Hi", web_whatsapp="079 111 22 33",
+                  web_map_lat="47.1", web_map_lon="8.2", h1_1_from="08:00", h1_1_to="12:00", h6_1_from="09:00",
+                  h6_1_to="12:00", web_stats="100 | cars", web_reviews="Ali | 5 | Great!", web_brands="Audi, BMW")
+        r = self.post("/website/settings", h1_1_from="12:00", h1_1_to="08:00")
+        self.assertIn(b"start time must be before", r.data)
+        for url in ["/website/", "/website/cars", f"/website/cars/{car_id}", "/website/parts", "/website/parts?show=online",
+                    "/website/services", "/website/settings", "/website/publish"]:
+            self.get(url)
+        # build
+        r = self.post("/website/build")
+        self.assertIn(b"Website built", r.data)
+        build = __import__("views.website", fromlist=["BUILD_DIR"]).BUILD_DIR
+        data = {}
+        for name in ("config", "cars", "parts", "services"):
+            with open(os.path.join(build, "data", name + ".js"), encoding="utf-8") as f:
+                text = f.read()
+            data[name] = text
+        cars = json.loads(data["cars"].split("window.CARS = ", 1)[1].rstrip().rstrip(";"))
+        self.assertEqual([c["make"] for c in cars], ["Audi", "Fiat"])          # hidden car not online, sold last
+        self.assertEqual(cars[0]["price"], 22900)
+        self.assertEqual(len(cars[0]["images"]), 2)
+        for img_path in cars[0]["images"]:
+            self.assertTrue(os.path.exists(os.path.join(build, img_path)))
+        parts = json.loads(data["parts"].split("window.PARTS = ", 1)[1].rstrip().rstrip(";"))
+        self.assertEqual(len(parts), 1)
+        self.assertEqual(parts[0]["price"], 10.8)       # 10.00 + 8.1 % VAT, rounded to 5 Rappen
+        self.assertEqual(parts[0]["stock"], 4)
+        config = json.loads(data["config"].split("window.GARAGE = ", 1)[1].rstrip().rstrip(";"))
+        self.assertEqual(config["slogan"], "Best garage")
+        self.assertEqual(config["hours"]["1"], [["08:00", "12:00"]])
+        self.assertEqual(config["hours"]["0"], [])
+        self.assertEqual(config["reviews"][0]["name"], "Ali")
+        self.assertIn("Car wash", data["services"])
+        self.assertTrue(os.path.exists(os.path.join(build, "index.html")))
+        self.assertIn(b"window.CARS", self.get("/website/preview/data/cars.js").data)
+        self.get("/website/preview/")
+        r = self.get("/website/download")
+        names = zipfile.ZipFile(io.BytesIO(r.data)).namelist()
+        self.assertIn("index.html", names)
+        self.assertIn("data/cars.js", names)
+        # publish without keys
+        r = self.post("/website/publish")
+        self.assertIn(b"Netlify token and site ID first", r.data)
+        # sold date + delete
+        self.post(f"/website/cars/{car_id}", make="Audi", model="A4", price="22900", status="sold")
+        self.assertIsNotNone(self.one("SELECT sold_at FROM web_cars WHERE id=?", car_id))
+        self.post(f"/website/cars/{car_id}/delete")
+        self.assertEqual(self.one("SELECT COUNT(*) FROM web_car_photos WHERE car_id=?", car_id), 0)
+
+    def test_upgrade_old_database(self):
+        """A version-2 database (before the website section) is upgraded without losing data."""
+        import sqlite3
+        path = os.path.join(tempfile.mkdtemp(), "old.db")
+        old = sqlite3.connect(path)
+        old.execute("CREATE TABLE parts (id INTEGER PRIMARY KEY, part_number TEXT, name TEXT)")
+        old.execute("INSERT INTO parts (part_number, name) VALUES ('X', 'Old part')")
+        old.commit()
+        db.migrate(old)
+        cols = [r[1] for r in old.execute("PRAGMA table_info(parts)")]
+        self.assertIn("web_show", cols)
+        self.assertEqual(old.execute("SELECT name, web_show FROM parts").fetchone(), ("Old part", 0))
+        old.close()
+
+
 class NewFeatures(Base):
     def test_messages_cash_labels_import_errors(self):
         r = self.post("/customers/new", salutation="Ms", first_name="Sara", last_name="Ahmed", mobile="079 555 66 77",

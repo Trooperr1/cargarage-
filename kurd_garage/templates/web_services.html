@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>🛠️ Services & prices on the website</h1>
+{% include "_web_tabs.html" %}
+<p class="muted">Price = “from CHF …” incl. VAT. Price 0 = “price on request”. Lower order number = shown first. The first 6 are shown on the home page.</p>
+{% for s in rows %}
+<form method="post" class="card web-svc {{ '' if s.active else 'muted' }}">{{ csrf_field() }}<input type="hidden" name="id" value="{{ s.id }}">
+  <div class="cols4">
+    <label>Order<input name="sort" type="number" value="{{ s.sort }}"></label>
+    <label>Icon<input name="icon" value="{{ s.icon }}" maxlength="4"></label>
+    <label class="span2">Name<input name="name" value="{{ s.name }}" required></label>
+    <label>From price CHF<input name="price" value="{{ s.price|money_in }}" inputmode="decimal"></label>
+    <label>Duration<input name="time" value="{{ s.time or '' }}"></label>
+    <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if s.active }}> show on website</label>
+  </div>
+  <div class="cols2"><label>Text<textarea name="text" rows="3">{{ s.text or '' }}</textarea></label>
+  <label>Points with ✔ (one per line)<textarea name="points" rows="3">{{ s.points or '' }}</textarea></label></div>
+  <button class="small">Save</button>
+</form>
+{% endfor %}
+<form method="post" class="card">{{ csrf_field() }}<h3>+ New service</h3>
+  <div class="cols4"><label>Icon<input name="icon" value="🔧" maxlength="4"></label><label class="span2">Name<input name="name" required></label>
+  <label>From price CHF<input name="price" inputmode="decimal"></label><label>Duration<input name="time"></label><label>Order<input name="sort" type="number" value="50"></label></div>
+  <div class="cols2"><label>Text<textarea name="text" rows="2"></textarea></label><label>Points (one per line)<textarea name="points" rows="2"></textarea></label></div>
+  <button>Add</button></form>
+{% endblock %}

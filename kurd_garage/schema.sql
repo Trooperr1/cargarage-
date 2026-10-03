@@ -539,3 +539,54 @@ BEGIN
     INSERT INTO mileage_log (vehicle_id, mileage, source) VALUES (NEW.vehicle_id, NEW.mileage_in, 'job #' || NEW.id);
     UPDATE vehicles SET mileage = MAX(COALESCE(mileage, 0), NEW.mileage_in) WHERE id = NEW.vehicle_id;
 END;
+
+-- ------------------------------------------------------------------ public website (version 3)
+
+-- Cars for sale shown on the website.
+CREATE TABLE IF NOT EXISTS web_cars (
+    id          INTEGER PRIMARY KEY,
+    make        TEXT    NOT NULL,
+    model       TEXT    NOT NULL,
+    year        INTEGER CHECK (year IS NULL OR year BETWEEN 1900 AND 2100),
+    km          INTEGER CHECK (km IS NULL OR km >= 0),
+    price       INTEGER NOT NULL CHECK (price >= 0),           -- Rappen, incl. VAT
+    fuel        TEXT,
+    gearbox     TEXT,
+    power_ps    INTEGER CHECK (power_ps IS NULL OR power_ps >= 0),
+    body        TEXT,
+    doors       INTEGER,
+    seats       INTEGER,
+    color_name  TEXT,
+    color_hex   TEXT    NOT NULL DEFAULT '#64748b',
+    first_reg   TEXT,                                          -- MM.YYYY
+    mfk         TEXT,
+    warranty    TEXT,
+    status      TEXT    NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'sold', 'hidden')),
+    is_new      INTEGER NOT NULL DEFAULT 1 CHECK (is_new IN (0, 1)),
+    features    TEXT,                                          -- one per line
+    description TEXT,
+    cost        INTEGER,                                       -- what you paid (never shown online)
+    sold_at     TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS web_car_photos (
+    id          INTEGER PRIMARY KEY,
+    car_id      INTEGER NOT NULL REFERENCES web_cars(id) ON DELETE CASCADE,
+    stored_name TEXT    NOT NULL UNIQUE,
+    sort        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_web_car_photos ON web_car_photos(car_id, sort);
+
+-- Services and starting prices shown on the website.
+CREATE TABLE IF NOT EXISTS web_services (
+    id      INTEGER PRIMARY KEY,
+    sort    INTEGER NOT NULL DEFAULT 0,
+    icon    TEXT    NOT NULL DEFAULT '🔧',
+    name    TEXT    NOT NULL,
+    price   INTEGER NOT NULL DEFAULT 0 CHECK (price >= 0),     -- Rappen "from", 0 = on request
+    time    TEXT,
+    text    TEXT,
+    points  TEXT,                                              -- one per line
+    active  INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1))
+);

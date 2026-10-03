@@ -1,0 +1,8 @@
+<p class="tabs no-print">{% set ep = request.endpoint %}
+<a href="{{ url_for('website.index') }}" class="{{ 'on' if ep == 'website.index' }}">🌐 Overview</a>
+<a href="{{ url_for('website.cars') }}" class="{{ 'on' if ep in ('website.cars', 'website.car_edit') }}">🚗 Cars for sale</a>
+<a href="{{ url_for('website.parts') }}" class="{{ 'on' if ep == 'website.parts' }}">📦 Shop parts</a>
+<a href="{{ url_for('website.services') }}" class="{{ 'on' if ep == 'website.services' }}">🛠️ Services & prices</a>
+<a href="{{ url_for('website.site_settings') }}" class="{{ 'on' if ep == 'website.site_settings' }}">✏️ Texts, hours & links</a>
+{% if session.role == 'admin' %}<a href="{{ url_for('website.publish') }}" class="{{ 'on' if ep == 'website.publish' }}">🚀 Put online</a>{% endif %}
+</p>

@@ -9,7 +9,7 @@ from werkzeug.exceptions import HTTPException
 import core
 import db
 from views import (admin, appointments, auth, customers, dashboard, expenses, invoices, jobs, parts,
-                   reports, staff, tyres, vehicles)
+                   reports, staff, tyres, vehicles, website)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("KURD_GARAGE_SECRET") or db.secret_key()
@@ -20,7 +20,7 @@ app.config["PHONE_MODE"] = os.environ.get("HOST") == "0.0.0.0"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=12)   # log out automatically after 12 hours
 
 for module in (auth, dashboard, customers, vehicles, jobs, invoices, parts, appointments, tyres, staff,
-               expenses, reports, admin):
+               expenses, reports, admin, website):
     app.register_blueprint(module.bp)
 
 app.jinja_env.filters.update(chf=core.chf, money_in=core.rappen_input, qty=core.qty, d=core.swiss_date, km=core.km, iban=core.iban, intl=core.phone_intl,

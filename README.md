@@ -20,6 +20,7 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 | **Expenses** | Categories, supplier, VAT included, receipts as photo/PDF |
 | **Reports** | Revenue, labour/parts split, profit estimate, per month, per mechanic, best customers, top services/parts, makes, **VAT/MWST report per quarter**, receivables with ageing, **cash book (Kassenbuch)**, stock value, payments CSV |
 | **Messages** | One-click **WhatsApp / SMS / e-mail** with ready text: car ready, quote, ask for approval, MFK and service reminders, appointment confirmation, payment reminder |
+| **Website** | Manage your public website without code: cars for sale with photos, which parts appear in the online shop (with live stock and prices), services and prices, texts, opening hours, links — then **Build** and **Put online** (Netlify) with one click |
 | **Admin** | Garage settings (address, IBAN, UID, VAT rate, hourly rate, fees), logins (admin/staff), standard services, activity log, backup/restore, Excel export, **import customers & vehicles from Excel** |
 
 ## Data safety

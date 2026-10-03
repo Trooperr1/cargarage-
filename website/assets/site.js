@@ -111,7 +111,8 @@
     return '<footer class="site-footer"><div class="wrap grid4">' +
       "<div><h3>" + esc(G.name) + "</h3><p>" + esc(G.intro) + "</p>" + (social ? "<p>" + social + "</p>" : "") + "</div>" +
       "<div><h3>Contact</h3><p>" + esc(G.street) + "<br>" + esc(G.postcode) + " " + esc(G.city) + "</p>" +
-      '<p><a href="' + telLink() + '">' + esc(G.phone) + '</a><br><a href="' + waLink("Hello " + G.name + ", ") + '" target="_blank" rel="noopener">WhatsApp ' + esc(G.whatsapp) + '</a><br><a href="mailto:' + esc(G.email) + '">' + esc(G.email) + "</a></p></div>" +
+      '<p><a href="' + telLink() + '">' + esc(G.phone) + '</a><br><a href="' + waLink("Hello " + G.name + ", ") + '" target="_blank" rel="noopener">WhatsApp ' + esc(G.whatsapp) + "</a>" +
+      (G.email ? '<br><a href="mailto:' + esc(G.email) + '">' + esc(G.email) + "</a>" : "") + "</p></div>" +
       '<div><h3>Opening hours</h3><table class="hours">' + hours + "</table></div>" +
       "<div><h3>Links</h3><p>" + NAV.map(function (n) { return '<a href="' + n[0] + '">' + n[1] + "</a>"; }).join("<br>") +
       '<br><a href="legal.html">Legal notice & privacy</a></p></div>' +
@@ -130,7 +131,8 @@
     $all("[data-g]").forEach(function (el) { el.textContent = G[el.getAttribute("data-g")] || ""; });
     $all("[data-tel]").forEach(function (el) { el.href = telLink(); });
     $all("[data-wa]").forEach(function (el) { el.href = waLink(el.getAttribute("data-wa") || ("Hello " + G.name + ", ")); el.target = "_blank"; el.rel = "noopener"; });
-    $all("[data-mail]").forEach(function (el) { el.href = "mailto:" + G.email; });
+    $all("[data-mail]").forEach(function (el) { if (G.email) el.href = "mailto:" + G.email; else el.style.display = "none"; });
+    if (!G.email) $all('button[value="mail"]').forEach(function (b) { b.style.display = "none"; });
     document.title = document.title.replace("{name}", G.name || "");
     updateCartCount();
   }
@@ -235,7 +237,7 @@
       '<div class="car-img">' + carImage(c) + badge + "</div>" +
       '<div class="car-body"><h3>' + esc(c.make) + " " + esc(c.model) + "</h3>" +
       '<ul class="specs"><li>📅 ' + c.year + "</li><li>🛣️ " + km(c.km) + "</li><li>⛽ " + esc(c.fuel) + "</li><li>⚙️ " + esc(c.gearbox) + "</li></ul>" +
-      '<div class="car-foot"><span class="price big">' + chf(c.price) + '</span><span class="mfk">' + esc(c.mfk || "") + "</span></div></div></a>";
+      '<div class="car-foot"><span class="price big">' + chf(c.price) + '</span>' + (c.mfk ? '<span class="mfk">' + esc(c.mfk) + "</span>" : "") + "</div></div></a>";
   }
   function carsPage() {
     var all = window.CARS || [];
@@ -286,10 +288,10 @@
     box.innerHTML = '<p class="crumbs"><a href="cars.html">← All cars for sale</a></p>' +
       '<div class="car-detail"><div><div class="gallery-main">' + carImage(c, 0) + "</div>" + (thumbs ? '<div class="thumbs">' + thumbs + "</div>" : "") + "</div>" +
       '<div class="car-side"><h1>' + esc(c.make) + " " + esc(c.model) + "</h1>" + status +
-      '<div class="price huge">' + chf(c.price) + '</div><p class="muted">incl. VAT · ' + esc(c.mfk || "") + " · " + esc(c.warranty || "") + " warranty</p>" +
+      '<div class="price huge">' + chf(c.price) + '</div><p class="muted">' + ["incl. VAT", c.mfk, c.warranty ? c.warranty + " warranty" : ""].filter(Boolean).map(esc).join(" · ") + "</p>" +
       '<div class="cta-stack"><a class="btn btn-wa" href="' + waLink(enquiry) + '" target="_blank" rel="noopener">' + ICON.wa + " Ask on WhatsApp</a>" +
       '<a class="btn" href="' + telLink() + '">' + ICON.phone + " Call " + esc(G.phone) + "</a>" +
-      '<a class="btn btn-ghost" href="' + mailLink("Enquiry: " + c.make + " " + c.model, enquiry) + '">' + ICON.mail + " E-mail</a>" +
+      (G.email ? '<a class="btn btn-ghost" href="' + mailLink("Enquiry: " + c.make + " " + c.model, enquiry) + '">' + ICON.mail + " E-mail</a>" : "") +
       '<a class="btn btn-ghost" href="booking.html?service=testdrive&car=' + encodeURIComponent(c.make + " " + c.model) + '">Book a test drive</a></div>' +
       '<ul class="ticks small"><li>Trade-in of your old car possible</li><li>Financing & leasing on request</li><li>Delivered serviced and cleaned</li></ul></div></div>' +
       '<div class="grid2 top-gap"><div class="card"><h2>Specifications</h2><table class="spec-table">' + specs + "</table></div>" +

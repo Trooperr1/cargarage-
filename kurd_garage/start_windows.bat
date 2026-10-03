@@ -11,6 +11,7 @@ if not exist .venv\Scripts\python.exe (
     echo Installing, please wait...
     .venv\Scripts\python -m pip install -r requirements.txt || goto error
 )
+.venv\Scripts\python -c "import PIL" 2>nul || .venv\Scripts\python -m pip install --retries 0 --timeout 10 pillow >nul 2>nul
 rem Create / update the desktop icon ("Kurd Garage" or "Kurd Garage + phone")
 set SC_NAME=Kurd Garage
 set SC_FILE=start_windows.bat

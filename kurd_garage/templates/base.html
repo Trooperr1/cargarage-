@@ -22,6 +22,7 @@
     <a href="{{ url_for('tyres.index') }}" class="{{ 'on' if ep.startswith('tyres') }}">Tyre hotel</a>
     <a href="{{ url_for('staff.index') }}" class="{{ 'on' if ep.startswith('staff') }}">Staff</a>
     <a href="{{ url_for('expenses.index') }}" class="{{ 'on' if ep.startswith('expenses') }}">Expenses</a>
+    <a href="{{ url_for('website.index') }}" class="{{ 'on' if ep.startswith('website') }}">Website</a>
     <a href="{{ url_for('reports.index') }}" class="{{ 'on' if ep.startswith('reports') }}">Reports</a>
     {% if session.role == 'admin' %}<a href="{{ url_for('admin.index') }}" class="{{ 'on' if ep.startswith('admin') }}">Admin</a>{% endif %}
   </nav>

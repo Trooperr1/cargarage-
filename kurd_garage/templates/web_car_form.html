@@ -1,0 +1,48 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, money, select, textarea, check, v with context %}
+{% block content %}
+<h1>{{ 'Edit car' if car_id else 'Add car for sale' }}</h1>
+{% include "_web_tabs.html" %}
+<form method="post" enctype="multipart/form-data" class="card">{{ csrf_field() }}
+  <h3>The car</h3>
+  <div class="cols4">
+    {{ input('Make', 'make', row, required=true, extra='list="makes" placeholder="Volkswagen"') }}
+    {{ input('Model & version', 'model', row, required=true, cls='span2', extra='placeholder="Golf 1.5 TSI Highline"') }}
+    {{ select('Status', 'status', [('available','available (for sale)'),('reserved','reserved'),('sold','sold'),('hidden','hidden (not online)')], row, blank=false) }}
+    {{ money('Price incl. VAT', 'price', row, required=true) }}
+    {{ input('Year', 'year', row, type='number', extra='min="1900" max="2100"') }}
+    {{ input('First registration (MM.YYYY)', 'first_reg', row, extra='placeholder="03.2019"') }}
+    {{ input('Kilometres', 'km', row, type='number', extra='min="0"') }}
+    {{ select('Fuel', 'fuel', fuels, row) }}
+    {{ select('Gearbox', 'gearbox', ['Manual', 'Automatic'], row) }}
+    {{ input('Power (PS)', 'power_ps', row, type='number', extra='min="0"') }}
+    {{ select('Body', 'body', bodies, row) }}
+    {{ input('Doors', 'doors', row, type='number', extra='min="1" max="6"') }}
+    {{ input('Seats', 'seats', row, type='number', extra='min="1" max="9"') }}
+    {{ input('Colour', 'color_name', row, extra='placeholder="Atlantic Blue"') }}
+    <label>Colour of the drawing (if no photo)<input type="color" name="color_hex" value="{{ v(row, 'color_hex') or '#64748b' }}"></label>
+    {{ input('MFK', 'mfk', row, extra='placeholder="MFK fresh / MFK 05.2026"') }}
+    {{ input('Warranty', 'warranty', row, extra='placeholder="12 months"') }}
+  </div>
+  {{ check('Show “New in stock” label', 'is_new', row, default=true) }}
+  <div class="cols2">
+    {{ textarea('Equipment (one per line)', 'features', row, rows=7) }}
+    {{ textarea('Description', 'description', row, rows=7) }}
+  </div>
+  <h3 id="photos">📷 Photos</h3>
+  <p class="small muted">Choose several photos at once. The first photo is the main photo. Landscape photos look best.</p>
+  <input type="file" name="photos" multiple accept="image/jpeg,image/png,image/webp">
+  {{ money('What you paid (private, never shown online)', 'cost', row) }}
+  <button class="top-gap">Save car</button>
+  <a class="btn light" href="{{ url_for('website.cars') }}">Back to list</a>
+</form>
+{% if photos %}
+<div class="card"><h3>Photos ({{ photos|length }})</h3><div class="gallery">
+{% for p in photos %}<div class="file"><img src="{{ url_for('website.photo', name=p.stored_name) }}" alt="">
+  <div class="small">{% if loop.first %}<b>⭐ main photo</b>{% else %}
+  <form method="post" action="{{ url_for('website.car_photo', car_id=car_id, pid=p.id, action='main') }}" class="inline">{{ csrf_field() }}<button class="link">make main</button></form>{% endif %}
+  <form method="post" action="{{ url_for('website.car_photo', car_id=car_id, pid=p.id, action='delete') }}" class="inline" onsubmit="return confirm('Delete photo?')">{{ csrf_field() }}<button class="link">✕ delete</button></form></div></div>
+{% endfor %}</div></div>
+{% endif %}
+{% if car_id %}<form method="post" action="{{ url_for('website.car_delete', car_id=car_id) }}" onsubmit="return confirm('Delete this car and its photos? (Tip: set it to “sold” instead)')">{{ csrf_field() }}<button class="danger small">Delete car</button></form>{% endif %}
+<datalist id="makes">{% for m in ['Alfa Romeo','Audi','BMW','BYD','Citroën','Cupra','Dacia','Fiat','Ford','Honda','Hyundai','Jeep','Kia','Land Rover','Mazda','Mercedes-Benz','MG','Mini','Mitsubishi','Nissan','Opel','Peugeot','Porsche','Renault','Seat','Škoda','Smart','Subaru','Suzuki','Tesla','Toyota','Volkswagen','Volvo'] %}<option value="{{ m }}">{% endfor %}</datalist>
+{% endblock %}

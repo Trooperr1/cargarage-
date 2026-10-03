@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, textarea with context %}
+{% block content %}
+<h1>✏️ Website texts, hours & links</h1>
+{% include "_web_tabs.html" %}
+<p class="muted">Name, address, phone, e-mail and UID come from <a href="{{ url_for('admin.settings_page') }}">Admin → Garage settings</a>.</p>
+<form method="post" class="card">{{ csrf_field() }}
+  <h3>Texts</h3>
+  <div class="cols2">{{ input('Slogan', 'web_slogan', S) }}{{ input('WhatsApp number (mobile)', 'web_whatsapp', S, extra='placeholder="079 123 45 67"') }}</div>
+  {{ textarea('Short introduction (home page)', 'web_intro', S, rows=2) }}
+  <h3>Opening hours</h3>
+  <table class="hours-edit"><tr><th></th><th>Morning from</th><th>to</th><th>Afternoon from</th><th>to</th></tr>
+  {% for d, name in days %}{% set slots = hours[d|string] or [] %}
+  <tr><td><b>{{ name }}</b></td>
+  {% for n in (1, 2) %}{% set slot = slots[n - 1] if slots|length >= n else ['', ''] %}
+    <td><input type="time" name="h{{ d }}_{{ n }}_from" value="{{ slot[0] }}"></td><td><input type="time" name="h{{ d }}_{{ n }}_to" value="{{ slot[1] }}"></td>{% endfor %}</tr>
+  {% endfor %}</table>
+  <p class="small muted">Leave a day empty = closed.</p>
+  <h3>Map position</h3>
+  <p class="small muted">On maps.google.com right-click your garage — the first line shows two numbers like 47.3769, 8.5417.</p>
+  <div class="cols4">{{ input('Latitude', 'web_map_lat', S) }}{{ input('Longitude', 'web_map_lon', S) }}{{ input('Owner (legal page)', 'web_owner', S) }}{{ input('Year founded', 'web_founded', S, type='number') }}</div>
+  <h3>Social media</h3>
+  <div class="cols4">{{ input('Instagram link', 'web_instagram', S) }}{{ input('Facebook link', 'web_facebook', S) }}{{ input('TikTok link', 'web_tiktok', S) }}{{ input('Google reviews link', 'web_google_reviews', S) }}</div>
+  <h3>Home page</h3>
+  <div class="cols2">
+    {{ textarea('Numbers (one per line: number | text)', 'web_stats', S, rows=4) }}
+    {{ textarea('Customer reviews (one per line: name | stars 1-5 | text)', 'web_reviews', S, rows=4) }}
+  </div>
+  {{ input('Car brands (separated by commas)', 'web_brands', S) }}
+  <button>Save</button>
+</form>
+{% endblock %}

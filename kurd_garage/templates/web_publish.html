@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input with context %}
+{% block content %}
+<h1>🚀 Put the website online</h1>
+{% include "_web_tabs.html" %}
+<div class="grid2">
+<div class="card">
+  <h2>One-time setup (free)</h2>
+  <ol>
+    <li>Go to <b>app.netlify.com</b> and create a free account (“Sign up”, e.g. with your e-mail).</li>
+    <li>On this computer, open the website folder once: click <b>Build website</b> on the overview, then <b>Download website as ZIP</b> and unzip it.</li>
+    <li>In Netlify click <b>Add new site → Deploy manually</b> and drag the unzipped folder onto the page. Your site gets an address like <i>kurd-garage.netlify.app</i>.</li>
+    <li>In Netlify open <b>Site configuration</b> and copy the <b>Site ID</b> (also called Project ID). Paste it below.</li>
+    <li>Click your round profile picture → <b>User settings → Applications → Personal access tokens → New access token</b>. Name it “Kurd Garage”, copy it and paste it below.</li>
+  </ol>
+  <form method="post">{{ csrf_field() }}<input type="hidden" name="save_keys" value="1">
+    {{ input('Netlify site ID', 'web_netlify_site', S) }}
+    <label>Netlify access token<input type="password" name="web_netlify_token" value="{{ S.web_netlify_token }}" autocomplete="off"></label>
+    <button>Save</button>
+  </form>
+</div>
+<div class="card">
+  <h2>Publish</h2>
+  {% if S.web_netlify_token and S.web_netlify_site %}
+    <p>Builds the website with your newest data and uploads it.</p>
+    <form method="post">{{ csrf_field() }}<button class="wa">🚀 Build & put online now</button></form>
+    <p class="small muted">Last online: {{ S.web_last_publish|d or 'never' }}</p>
+  {% else %}<p class="muted">Finish the setup on the left first.</p>{% endif %}
+  <h3>Own address (kurdgarage.ch)</h3>
+  <p>Buy the domain at a Swiss provider (Infomaniak, Hostpoint — about CHF 15/year). Then in Netlify: <b>Domain management → Add a domain</b> and follow the steps.</p>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>🌐 Your website</h1>
+{% include "_web_tabs.html" %}
+{% if not template_ok %}<p class="flash error">The “website” folder is missing next to the “kurd_garage” folder. Download the program again (complete ZIP).</p>{% endif %}
+<div class="stats">
+  <a class="stat" href="{{ url_for('website.cars') }}"><b>{{ counts.cars }}</b><span>cars for sale online</span></a>
+  <a class="stat" href="{{ url_for('website.cars') }}"><b>{{ counts.sold }}</b><span>sold cars</span></a>
+  <a class="stat" href="{{ url_for('website.parts', show='online') }}"><b>{{ counts.parts }}</b><span>parts in the online shop</span></a>
+  <a class="stat" href="{{ url_for('website.services') }}"><b>{{ counts.services }}</b><span>services shown</span></a>
+</div>
+<div class="grid3">
+  <div class="card"><h2>1. Change content</h2>
+    <p>Add cars with photos, choose parts for the shop, change prices, texts and opening hours. Address, phone and e-mail come from <a href="{{ url_for('admin.settings_page') }}">Garage settings</a>.</p>
+    <p><a class="btn" href="{{ url_for('website.car_edit') }}">+ Add car for sale</a></p></div>
+  <div class="card"><h2>2. Build & check</h2>
+    <p>Makes the website from your data. Do this after every change.</p>
+    <form method="post" action="{{ url_for('website.build_site') }}">{{ csrf_field() }}<button>🔨 Build website</button></form>
+    {% if built %}<p class="top-gap"><a class="btn light" href="{{ url_for('website.preview') }}" target="_blank">👁 Preview website</a></p>
+    <p class="small muted">Last built: {{ S.web_last_build|d }}</p>{% endif %}</div>
+  <div class="card"><h2>3. Put online</h2>
+    {% if S.web_netlify_token and S.web_netlify_site %}
+      <p>One click uploads the newest version to the internet.</p>
+      {% if session.role == 'admin' %}<form method="post" action="{{ url_for('website.publish') }}">{{ csrf_field() }}<button class="wa">🚀 Build & put online</button></form>{% endif %}
+      <p class="small muted">Last online: {{ S.web_last_publish|d or 'never' }}</p>
+    {% else %}
+      <p>Connect a free Netlify account once, then it is one click.</p>
+      {% if session.role == 'admin' %}<a class="btn" href="{{ url_for('website.publish') }}">Set up (10 minutes)</a>{% endif %}
+    {% endif %}
+    {% if built %}<p class="small"><a href="{{ url_for('website.download') }}">⬇ Download website as ZIP</a></p>{% endif %}</div>
+</div>
+<p class="small muted">The finished website is saved in <code>{{ build_dir }}</code>.</p>
+{% endblock %}

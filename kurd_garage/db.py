@@ -9,7 +9,7 @@ from datetime import date, datetime
 from werkzeug.security import generate_password_hash
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def _default_data_dir():
@@ -48,7 +48,49 @@ DEFAULT_SETTINGS = {
     "mfk_warn_days": "60",
     "backup_dir": "",
     "last_backup": "",
+    # public website
+    "web_slogan": "Your car. Our passion.",
+    "web_intro": "Service, repairs, MFK, tyres, used cars and parts — all in one place. Honest prices, fast work, Swiss quality.",
+    "web_whatsapp": "",
+    "web_map_lat": "47.3769",
+    "web_map_lon": "8.5417",
+    "web_hours": '{"1": [["07:30", "12:00"], ["13:15", "18:00"]], "2": [["07:30", "12:00"], ["13:15", "18:00"]], '
+                 '"3": [["07:30", "12:00"], ["13:15", "18:00"]], "4": [["07:30", "12:00"], ["13:15", "18:00"]], '
+                 '"5": [["07:30", "12:00"], ["13:15", "17:00"]], "6": [["09:00", "13:00"]], "0": []}',
+    "web_owner": "",
+    "web_founded": "",
+    "web_instagram": "", "web_facebook": "", "web_tiktok": "", "web_google_reviews": "",
+    "web_stats": "2'500+ | cars serviced\n4.9 ★ | Google rating\n24 h | average repair time\n12 | months warranty on repairs",
+    "web_brands": "Volkswagen, Audi, BMW, Mercedes-Benz, Toyota, Škoda, Ford, Opel, Hyundai, Kia, Renault, Peugeot",
+    "web_reviews": "Daniel M. | 5 | Fast, honest and fair prices. My car passed the MFK without any problem.\n"
+                   "Sarah K. | 5 | They explained everything and called me before doing extra work. Highly recommended!",
+    "web_netlify_token": "",
+    "web_netlify_site": "",
+    "web_last_build": "",
+    "web_last_publish": "",
 }
+
+DEFAULT_WEB_SERVICES = [
+    ("🛠️", "Service & maintenance", 18900, "2–3 h", "Service according to the manufacturer's plan. Oil, filters, checks — your service book is stamped and your warranty stays valid.", "All brands\nOriginal-quality parts\nDigital service record"),
+    ("🚦", "MFK preparation & inspection", 12000, "1 day", "We check and prepare your car and take it to the road traffic office for you. No stress, no queue.", "Pre-check of all MFK points\nPresentation at the office\nRepairs only after your OK"),
+    ("🛞", "Tyres & tyre hotel", 8000, "45 min", "Tyre change, balancing and storage of your summer or winter wheels in our tyre hotel. Tyre sales of all brands.", "Change incl. balancing\nStorage per season\nTread depth check"),
+    ("🛑", "Brakes", 16000, "1–2 h", "Brake pads, discs and brake fluid. Free brake check with every service.", "Pads & discs\nBrake fluid change\nFree brake check"),
+    ("💻", "Diagnosis & electronics", 8000, "30–60 min", "Engine light on? We read the fault memory with professional diagnosis tools and find the real problem.", "All brands\nEngine & airbag lights\nClear explanation"),
+    ("❄️", "Air conditioning service", 14900, "1 h", "Cleaning, disinfection and refill of your air conditioning for cool air and fresh smell.", "Refrigerant refill\nLeak test\nDisinfection"),
+    ("🔧", "Repairs", 0, "on request", "Clutch, timing belt, suspension, exhaust, engine — we repair it at a fair price with a quote before we start.", "Free quote\n12 months warranty\nCourtesy car on request"),
+    ("🔋", "Battery & electrics", 4000, "30 min", "Battery test and replacement, lights, starter and alternator.", "Battery test\nReplacement same day\nLights & bulbs"),
+    ("🚗", "Bodywork & glass", 0, "on request", "Small dents, scratches, windscreen chips and replacement — with insurance handling.", "Insurance cases\nWindscreen repair\nPaint touch-ups"),
+    ("✨", "Cleaning & detailing", 7900, "2 h", "Interior and exterior cleaning — your car comes back like new.", "Interior cleaning\nHand wash\nSeat cleaning"),
+]
+
+
+def migrate(conn):
+    """Bring an older database up to the current version (never deletes data)."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(parts)")}
+    for col, decl in [("web_show", "INTEGER NOT NULL DEFAULT 0"), ("web_category", "TEXT"),
+                      ("web_fits", "TEXT"), ("web_image", "TEXT")]:
+        if col not in cols:
+            conn.execute(f"ALTER TABLE parts ADD COLUMN {col} {decl}")
 
 DEFAULT_SERVICES = [
     ("OIL", "Oil service (oil + filter change)", 1.0, None),
@@ -96,6 +138,7 @@ def init_db():
     conn = connect()
     with open(os.path.join(BASE_DIR, "schema.sql"), encoding="utf-8") as f:
         conn.executescript(f.read())
+    migrate(conn)
     conn.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     for key, value in DEFAULT_SETTINGS.items():
         conn.execute("INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)", (key, value))
@@ -107,6 +150,9 @@ def init_db():
     if conn.execute("SELECT COUNT(*) FROM services").fetchone()[0] == 0:
         conn.executemany("INSERT INTO services (code, name, hours, fixed_price) VALUES (?, ?, ?, ?)",
                          DEFAULT_SERVICES)
+    if conn.execute("SELECT COUNT(*) FROM web_services").fetchone()[0] == 0:
+        conn.executemany("INSERT INTO web_services (sort, icon, name, price, time, text, points) VALUES (?,?,?,?,?,?,?)",
+                         [(i, *row) for i, row in enumerate(DEFAULT_WEB_SERVICES)])
     conn.commit()
     conn.close()
 
@@ -176,14 +222,15 @@ def restore(zip_path):
         if src.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             src.close()
             raise ValueError("The backup file is damaged.")
-        if src.execute("PRAGMA user_version").fetchone()[0] != SCHEMA_VERSION:
+        if src.execute("PRAGMA user_version").fetchone()[0] > SCHEMA_VERSION:
             src.close()
-            raise ValueError("This backup is from a different version of the program.")
+            raise ValueError("This backup is from a newer version of the program. Please update the program first.")
         safety = backup()
         live = connect()
         src.backup(live)
         src.close()
         live.close()
+        init_db()   # upgrade an older backup to the current version
         up = os.path.join(tmp, "uploads")
         if os.path.isdir(up):
             os.makedirs(UPLOAD_DIR, exist_ok=True)
