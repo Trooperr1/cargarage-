@@ -1,4 +1,5 @@
 """Kurd Garage - garage management system for Switzerland (Flask + SQLite)."""
+import mimetypes
 import os
 import sqlite3
 from datetime import timedelta
@@ -10,6 +11,11 @@ import core
 import db
 from views import (admin, appointments, auth, customers, dashboard, expenses, invoices, jobs, parts,
                    reports, staff, tyres, vehicles, website)
+
+# Some Windows computers report wrong file types for these, then the browser ignores the design.
+for _ext, _type in ((".css", "text/css"), (".js", "text/javascript"), (".svg", "image/svg+xml"),
+                    (".html", "text/html"), (".json", "application/json"), (".webp", "image/webp")):
+    mimetypes.add_type(_type, _ext)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("KURD_GARAGE_SECRET") or db.secret_key()
@@ -117,7 +123,10 @@ if __name__ == "__main__":
         print(f"  PHONE: open  http://{core.local_ip()}:{port}  on a phone in the same Wi-Fi")
         print("  (or log in on this computer and click the phone icon to scan a QR code)\n")
     try:
+        import logging
+
         from waitress import serve   # stable multi-user server
+        logging.getLogger("waitress.queue").setLevel(logging.ERROR)
         serve(app, host=host, port=port, threads=8)
     except ImportError:
         app.run(host=host, port=port)

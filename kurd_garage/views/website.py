@@ -342,48 +342,56 @@ def build():
     if not os.path.isdir(TEMPLATE_DIR):
         raise ValueError("The 'website' folder is missing next to the 'kurd_garage' folder. Download the program again.")
     garage, services, cars, parts, images = site_data()
-    # Pages, styles and data are written fresh; photos are only copied when new (fast to rebuild often).
-    os.makedirs(BUILD_DIR, exist_ok=True)
-    for entry in os.listdir(BUILD_DIR):
-        if entry != "images":
-            full = os.path.join(BUILD_DIR, entry)
-            shutil.rmtree(full) if os.path.isdir(full) else os.remove(full)
-    for entry in os.listdir(TEMPLATE_DIR):
-        if entry in ("data", "images", "README.md"):
-            continue
-        src = os.path.join(TEMPLATE_DIR, entry)
-        if os.path.isdir(src):
-            shutil.copytree(src, os.path.join(BUILD_DIR, entry))
-        else:
-            shutil.copy2(src, os.path.join(BUILD_DIR, entry))
-    os.makedirs(os.path.join(BUILD_DIR, "data"))
+    # Files are only written when their content changed, and folders are never deleted:
+    # on Windows a file the browser is still loading cannot be deleted.
+    name = settings().get("garage_name") or "Kurd Garage"
+
+    def put(rel, content):
+        path = os.path.join(BUILD_DIR, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        try:
+            with open(path, "rb") as fh:
+                if fh.read() == content:
+                    return
+        except OSError:
+            pass
+        with open(path, "wb") as fh:
+            fh.write(content)
+
+    for root, dirs, files in os.walk(TEMPLATE_DIR):
+        rel_root = os.path.relpath(root, TEMPLATE_DIR)
+        if rel_root == ".":
+            dirs[:] = [d for d in dirs if d not in ("data", "images")]
+        for f in files:
+            if rel_root == "." and f == "README.md":
+                continue
+            rel = os.path.normpath(os.path.join(rel_root, f))
+            with open(os.path.join(root, f), "rb") as fh:
+                content = fh.read()
+            if f.endswith(".html"):
+                content = content.decode("utf-8").replace("Kurd Garage", name).encode("utf-8")
+            put(rel, content)
+
+    header = "/* Made by the Kurd Garage program — do not edit, change it in the program instead. */\n"
+    dump = lambda v: json.dumps(v, ensure_ascii=False, indent=1)  # noqa: E731
+    put(os.path.join("data", "config.js"), (header + f"window.GARAGE = {dump(garage)};\n").encode("utf-8"))
+    put(os.path.join("data", "services.js"), (header + f"window.SERVICES = {dump(services)};\n").encode("utf-8"))
+    put(os.path.join("data", "cars.js"), (header + f"window.CARS = {dump(cars)};\n").encode("utf-8"))
+    put(os.path.join("data", "parts.js"), (header + f"window.PART_CATEGORIES = {dump(PART_CATEGORIES)};\n"
+                                           f"window.PARTS = {dump(parts)};\n").encode("utf-8"))
     image_dir = os.path.join(BUILD_DIR, "images")
     os.makedirs(image_dir, exist_ok=True)
-
-    def write(name, body):
-        with open(os.path.join(BUILD_DIR, "data", name), "w", encoding="utf-8") as fh:
-            fh.write("/* Made by the Kurd Garage program — do not edit, change it in the program instead. */\n" + body)
-    dump = lambda v: json.dumps(v, ensure_ascii=False, indent=1)  # noqa: E731
-    write("config.js", f"window.GARAGE = {dump(garage)};\n")
-    write("services.js", f"window.SERVICES = {dump(services)};\n")
-    write("cars.js", f"window.CARS = {dump(cars)};\n")
-    write("parts.js", f"window.PART_CATEGORIES = {dump(PART_CATEGORIES)};\nwindow.PARTS = {dump(parts)};\n")
     wanted = set(images)
-    for name in os.listdir(image_dir):
-        if name not in wanted:
-            os.remove(os.path.join(image_dir, name))
-    for name in wanted:
-        src, dst = os.path.join(db.UPLOAD_DIR, name), os.path.join(image_dir, name)
+    for f in os.listdir(image_dir):
+        if f not in wanted:
+            try:
+                os.remove(os.path.join(image_dir, f))
+            except OSError:
+                pass   # still in use; removed next time
+    for f in wanted:
+        src, dst = os.path.join(db.UPLOAD_DIR, f), os.path.join(image_dir, f)
         if os.path.exists(src) and not os.path.exists(dst):
             shutil.copy2(src, dst)
-    name = settings().get("garage_name") or "Kurd Garage"
-    for html in os.listdir(BUILD_DIR):
-        if html.endswith(".html"):
-            path = os.path.join(BUILD_DIR, html)
-            with open(path, encoding="utf-8") as fh:
-                text = fh.read()
-            with open(path, "w", encoding="utf-8") as fh:
-                fh.write(text.replace("Kurd Garage", name))
     conn = get_db()
     conn.execute("UPDATE settings SET value = ? WHERE key = 'web_last_build'", (datetime.now().strftime("%Y-%m-%d %H:%M"),))
     conn.commit()
