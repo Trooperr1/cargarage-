@@ -14,7 +14,7 @@
     <p>Add cars with photos, choose parts for the shop, change prices, texts and opening hours. Address, phone and e-mail come from <a href="{{ url_for('admin.settings_page') }}">Garage settings</a>.</p>
     <p><a class="btn" href="{{ url_for('website.car_edit') }}">+ Add car for sale</a></p></div>
   <div class="card"><h2>2. Build & check</h2>
-    <p>Makes the website from your data. Do this after every change.</p>
+    <p>The preview updates automatically when you change something here. Use this button after changes in Parts or Garage settings.</p>
     <form method="post" action="{{ url_for('website.build_site') }}">{{ csrf_field() }}<button>🔨 Build website</button></form>
     {% if built %}<p class="top-gap"><a class="btn light" href="{{ url_for('website.preview') }}" target="_blank">👁 Preview website</a></p>
     <p class="small muted">Last built: {{ S.web_last_build|d }}</p>{% endif %}</div>

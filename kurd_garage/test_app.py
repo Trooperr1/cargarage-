@@ -363,6 +363,15 @@ class Website(Base):
         self.post(f"/website/cars/{car_id}/delete")
         self.assertEqual(self.one("SELECT COUNT(*) FROM web_car_photos WHERE car_id=?", car_id), 0)
 
+    def test_new_car_appears_without_build_click(self):
+        self.post("/website/cars/new", make="Audi", model="A3 Sportback", year="2011", km="12222", price="12345",
+                  status="available")
+        r = self.get("/website/preview/data/cars.js")
+        self.assertIn("A3 Sportback".encode(), r.data)
+        self.post(f"/website/cars/{self.one('SELECT MAX(id) FROM web_cars')}", make="Audi", model="A3 Sportback",
+                  price="12345", status="sold")
+        self.assertIn(b'"status": "sold"', self.get("/website/preview/data/cars.js").data)
+
     def test_upgrade_old_database(self):
         """A version-2 database (before the website section) is upgraded without losing data."""
         import sqlite3

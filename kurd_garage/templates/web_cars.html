@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="titlebar"><h1>🚗 Cars for sale</h1><a class="btn" href="{{ url_for('website.car_edit') }}">+ Add car</a></div>
+<div class="titlebar"><h1>🚗 Cars for sale</h1><div><a class="btn light" href="{{ url_for('website.preview') }}" target="_blank">👁 See on website</a> <a class="btn" href="{{ url_for('website.car_edit') }}">+ Add car</a></div></div>
 {% include "_web_tabs.html" %}
 <div class="tablewrap"><table><tr><th>Photo</th><th>Car</th><th>Year</th><th class="num">km</th><th class="num">Price</th><th>Status</th><th class="num">Photos</th><th>Added</th></tr>
 {% for c in rows %}<tr class="{{ 'muted' if c.status in ('sold', 'hidden') }}">

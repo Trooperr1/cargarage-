@@ -125,7 +125,8 @@ def car_edit(car_id=None):
                              (car_id, save_photo(upload), start + n))
                 added += 1
         conn.commit()
-        ok("Car saved" + (f" with {added} new photo(s)" if added else "") + ". Click “Build website” to update the site.")
+        auto_build()
+        ok("Car saved" + (f" with {added} new photo(s)" if added else "") + ". The website preview is updated.")
         return redirect(url_for("website.car_edit", car_id=car_id))
     photos = q("SELECT * FROM web_car_photos WHERE car_id = ? ORDER BY sort, id", (car_id,)) if car_id else []
     return render_template("web_car_form.html", row=row, car_id=car_id, photos=photos, fuels=FUELS, bodies=BODIES,
@@ -149,6 +150,7 @@ def car_photo(car_id, pid, action):
     else:
         abort(404)
     conn.commit()
+    auto_build()
     return redirect(url_for("website.car_edit", car_id=car_id) + "#photos")
 
 
@@ -163,6 +165,7 @@ def car_delete(car_id):
     get_db().execute("DELETE FROM web_cars WHERE id = ?", (car_id,))
     audit("delete", "web_car", car_id)
     get_db().commit()
+    auto_build()
     ok("Car deleted")
     return redirect(url_for("website.cars"))
 
@@ -192,6 +195,7 @@ def parts():
                      (checkbox("web_show"), choice("web_category", [c[0] for c in PART_CATEGORIES], "other"),
                       form("web_fits"), image, pid))
         conn.commit()
+        auto_build()
         ok("Saved")
         return redirect(url_for("website.parts", show=request.args.get("show", "")) + f"#p{pid}")
     show = request.args.get("show", "")
@@ -211,6 +215,7 @@ def parts_all():
     get_db().execute("UPDATE parts SET web_show = ? WHERE active = 1", (value,))
     get_db().execute("UPDATE parts SET web_category = 'other' WHERE web_category IS NULL")
     get_db().commit()
+    auto_build()
     ok("All parts are now " + ("shown in" if value else "hidden from") + " the online shop")
     return redirect(url_for("website.parts"))
 
@@ -233,6 +238,7 @@ def services():
             get_db().execute("INSERT INTO web_services (sort, icon, name, price, time, text, points, active) "
                              "VALUES (?,?,?,?,?,?,?,?)", values)
         get_db().commit()
+        auto_build()
         ok("Service saved")
         return redirect(url_for("website.services"))
     return render_template("web_services.html", rows=q("SELECT * FROM web_services ORDER BY active DESC, sort, id"))
@@ -267,6 +273,7 @@ def site_settings():
                          (k, v))
         audit("update", "website settings")
         conn.commit()
+        auto_build()
         ok("Website settings saved")
         return redirect(url_for("website.site_settings"))
     hours = json.loads(settings().get("web_hours") or "{}")
@@ -367,6 +374,15 @@ def build():
     return len(cars), len(parts)
 
 
+def auto_build():
+    """Keep the preview up to date after every change (problems are shown when building by hand)."""
+    try:
+        build()
+        return True
+    except (ValueError, OSError):
+        return False
+
+
 def zip_bytes():
     out = io.BytesIO()
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
@@ -391,6 +407,8 @@ def build_site():
 @bp.route("/preview/<path:filename>")
 @login_required
 def preview(filename="index.html"):
+    if request.path.rstrip("/").endswith("/preview"):
+        auto_build()   # opening the preview always shows the newest data (also stock and prices)
     if not os.path.isdir(BUILD_DIR):
         error("Build the website first")
         return redirect(url_for("website.index"))

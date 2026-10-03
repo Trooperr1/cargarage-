@@ -34,6 +34,7 @@
   {{ money('What you paid (private, never shown online)', 'cost', row) }}
   <button class="top-gap">Save car</button>
   <a class="btn light" href="{{ url_for('website.cars') }}">Back to list</a>
+  {% if car_id %}<a class="btn light" href="{{ url_for('website.preview') }}" target="_blank">👁 See on website</a>{% endif %}
 </form>
 {% if photos %}
 <div class="card"><h3>Photos ({{ photos|length }})</h3><div class="gallery">
