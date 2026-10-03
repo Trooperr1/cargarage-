@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Reports</h1>
+<form class="toolbar">From <input type="date" name="start" value="{{ start }}"> to <input type="date" name="end" value="{{ end }}"><button>Show</button></form>
+<div class="stats">
+  <div class="stat"><b>{{ total_income|money }}</b><span>Money received</span></div>
+  <div class="stat"><b>{{ parts_cost|money }}</b><span>Cost of parts used</span></div>
+</div>
+<h2>Income per day</h2>
+<table><tr><th>Day</th><th>Method</th><th class="num">Payments</th><th class="num">Amount</th></tr>
+{% for r in income %}<tr><td>{{ r.day }}</td><td>{{ r.method }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.total|money }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No payments in this period.</td></tr>{% endfor %}</table>
+<h2>Work per mechanic</h2>
+<table><tr><th>Mechanic</th><th class="num">Jobs</th><th class="num">Labour</th><th class="num">Total billed</th></tr>
+{% for r in by_mechanic %}<tr><td>{{ r.name }}</td><td class="num">{{ r.jobs }}</td><td class="num">{{ r.labour|money }}</td><td class="num">{{ r.total|money }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No jobs.</td></tr>{% endfor %}</table>
+<h2>Most used parts</h2>
+<table><tr><th>Part</th><th class="num">Qty</th><th class="num">Sold for</th></tr>
+{% for r in top_parts %}<tr><td>{{ r.description }}</td><td class="num">{{ r.qty }}</td><td class="num">{{ r.total|money }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">No parts used.</td></tr>{% endfor %}</table>
+{% endblock %}

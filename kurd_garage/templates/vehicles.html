@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Cars</h1>
+<form class="toolbar"><input name="q" value="{{ request.args.q or '' }}" placeholder="Plate, make, model, owner"><button>Search</button></form>
+<p class="muted">To add a car, open the customer first.</p>
+<table><tr><th>Plate</th><th>Car</th><th>Year</th><th>Owner</th><th>Mileage</th><th></th></tr>
+{% for v in rows %}<tr><td><a href="{{ url_for('vehicle_view', vid=v.id) }}">{{ v.plate }}</a></td><td>{{ v.make }} {{ v.model }}</td><td>{{ v.year or '' }}</td>
+<td><a href="{{ url_for('customer_view', cid=v.customer_id) }}">{{ v.owner }}</a></td><td>{{ '{:,}'.format(v.mileage) if v.mileage is not none else '' }}</td>
+<td><a class="btn small" href="{{ url_for('job_new', vid=v.id) }}">+ New job</a></td></tr>
+{% else %}<tr><td colspan="6" class="muted">No cars yet.</td></tr>{% endfor %}</table>
+{% endblock %}

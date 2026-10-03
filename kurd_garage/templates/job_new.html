@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>New job — {{ vehicle.plate }} {{ vehicle.make }} {{ vehicle.model }}</h1>
+<p class="muted">Owner: {{ vehicle.owner }}</p>
+<form method="post" class="card narrow">{{ csrf_field() }}
+  <label>What does the customer want / problem * <textarea name="complaint" required></textarea></label>
+  <label>Mileage now (km) <input name="mileage_in" type="number" min="0" value="{{ vehicle.mileage if vehicle.mileage is not none else '' }}"></label>
+  <label>Mechanic <select name="mechanic_id"><option value="">— not assigned —</option>
+    {% for m in mechanics %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></label>
+  <button>Open job</button>
+</form>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>{{ 'Edit part' if row else 'New part' }}</h1>
+<form method="post" class="card narrow">{{ csrf_field() }}
+  {% set p = row or {} %}
+  <label>Part number * <input name="part_number" required value="{{ p.part_number or '' }}"></label>
+  <label>Name * <input name="name" required value="{{ p.name or '' }}"></label>
+  <label>Supplier <select name="supplier_id"><option value="">—</option>
+    {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if s.id == p.supplier_id }}>{{ s.name }}</option>{% endfor %}</select></label>
+  <div class="row"><label>Cost price <input name="cost_price" type="number" min="0" value="{{ p.cost_price or 0 }}"></label>
+  <label>Sell price <input name="sell_price" type="number" min="0" value="{{ p.sell_price or 0 }}"></label></div>
+  <div class="row">{% if not row %}<label>Starting stock <input name="quantity" type="number" min="0" value="0"></label>{% endif %}
+  <label>Warn when stock ≤ <input name="reorder_level" type="number" min="0" value="{{ p.reorder_level or 0 }}"></label></div>
+  <label>Shelf / location <input name="location" value="{{ p.location or '' }}"></label>
+  <button>Save</button>
+</form>
+{% endblock %}

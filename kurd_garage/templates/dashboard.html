@@ -1,0 +1,22 @@
+{% extends "base.html" %}{% from "_macros.html" import job_table with context %}
+{% block content %}
+<h1>Dashboard</h1>
+<div class="stats">
+  <a class="stat" href="{{ url_for('jobs', status='in_progress') }}"><b>{{ stats.open_jobs }}</b><span>Cars in work</span></a>
+  <a class="stat" href="{{ url_for('jobs', status='done') }}"><b>{{ stats.ready }}</b><span>Ready for pickup</span></a>
+  <div class="stat"><b>{{ stats.today_income|money }}</b><span>Income today</span></div>
+  <div class="stat"><b>{{ stats.month_income|money }}</b><span>Income this month</span></div>
+  <a class="stat warn" href="{{ url_for('jobs', status='unpaid') }}"><b>{{ stats.unpaid|money }}</b><span>Customers owe</span></a>
+  <a class="stat" href="{{ url_for('customers') }}"><b>{{ stats.customers }}</b><span>Customers</span></a>
+</div>
+<p><a class="btn" href="{{ url_for('customer_form') }}">+ New customer</a>
+   <a class="btn light" href="{{ url_for('vehicles') }}">+ New job (pick a car)</a></p>
+<h2>Active jobs</h2>
+{{ job_table(jobs) }}
+{% if low %}
+<h2>⚠ Low stock</h2>
+<table><tr><th>Part</th><th class="num">In stock</th><th class="num">Reorder at</th></tr>
+{% for p in low %}<tr><td><a href="{{ url_for('part_view', pid=p.id) }}">{{ p.name }}</a> <span class="muted">{{ p.part_number }}</span></td><td class="num owed">{{ p.quantity }}</td><td class="num">{{ p.reorder_level }}</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

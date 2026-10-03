@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% from "_macros.html" import job_table with context %}
+{% block content %}
+<h1>Jobs</h1>
+<p class="tabs"><a href="{{ url_for('jobs') }}" class="{{ 'on' if not status }}">All</a>
+{% for s in statuses %}<a href="{{ url_for('jobs', status=s) }}" class="{{ 'on' if status == s }}">{{ s.replace('_',' ') }}</a>{% endfor %}
+<a href="{{ url_for('jobs', status='unpaid') }}" class="{{ 'on' if status == 'unpaid' }}">unpaid</a></p>
+{{ job_table(rows) }}
+{% endblock %}

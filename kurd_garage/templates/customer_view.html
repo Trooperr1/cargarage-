@@ -1,0 +1,20 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table with context %}
+{% block content %}
+<h1>{{ row.name }}</h1>
+<div class="card">
+  <p>📞 {{ row.phone }}{% if row.phone2 %} · {{ row.phone2 }}{% endif %}{% if row.address %} · 📍 {{ row.address }}{% endif %}</p>
+  {% if row.notes %}<p class="muted">{{ row.notes }}</p>{% endif %}
+  <p>Balance owed: <b class="{{ 'owed' if balance > 0 }}">{{ balance|money }}</b> · Customer since {{ row.created_at[:10] }}</p>
+  <a class="btn light" href="{{ url_for('customer_form', cid=row.id) }}">Edit</a>
+  {% if session.role == 'admin' %}
+  <form method="post" action="{{ url_for('customer_delete', cid=row.id) }}" class="inline" onsubmit="return confirm('Delete this customer?')">{{ csrf_field() }}<button class="danger">Delete</button></form>
+  {% endif %}
+</div>
+<h2>Cars <a class="btn small" href="{{ url_for('vehicle_form', cid=row.id) }}">+ Add car</a></h2>
+<table><tr><th>Plate</th><th>Car</th><th>Year</th><th>Color</th><th></th></tr>
+{% for v in vehicles %}<tr><td><a href="{{ url_for('vehicle_view', vid=v.id) }}">{{ v.plate }}</a></td><td>{{ v.make }} {{ v.model }}</td><td>{{ v.year or '' }}</td><td>{{ v.color or '' }}</td>
+<td><a class="btn small" href="{{ url_for('job_new', vid=v.id) }}">+ New job</a></td></tr>
+{% else %}<tr><td colspan="5" class="muted">No cars yet.</td></tr>{% endfor %}</table>
+<h2>Job history</h2>
+{{ job_table(jobs, false) }}
+{% endblock %}

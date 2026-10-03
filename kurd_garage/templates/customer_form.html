@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>{{ 'Edit customer' if row else 'New customer' }}</h1>
+<form method="post" class="card narrow">{{ csrf_field() }}
+  <label>Name * <input name="name" required value="{{ row.name if row else '' }}"></label>
+  <label>Phone * <input name="phone" required value="{{ row.phone if row else '' }}"></label>
+  <label>Second phone <input name="phone2" value="{{ row.phone2 or '' if row else '' }}"></label>
+  <label>Address <input name="address" value="{{ row.address or '' if row else '' }}"></label>
+  <label>Notes <textarea name="notes">{{ row.notes or '' if row else '' }}</textarea></label>
+  <button>Save</button>
+</form>
+{% endblock %}

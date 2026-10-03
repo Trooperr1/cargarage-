@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>{{ 'Edit car' if row else 'New car' }} — {{ owner.name }}</h1>
+<form method="post" class="card narrow">{{ csrf_field() }}
+  {% set v = row or {} %}
+  <label>Plate number * <input name="plate" required value="{{ v.plate or '' }}"></label>
+  <label>Make * (Toyota, Kia…) <input name="make" required value="{{ v.make or '' }}"></label>
+  <label>Model * <input name="model" required value="{{ v.model or '' }}"></label>
+  <label>Year <input name="year" type="number" min="1950" max="2100" value="{{ v.year or '' }}"></label>
+  <label>Color <input name="color" value="{{ v.color or '' }}"></label>
+  <label>VIN / chassis number <input name="vin" value="{{ v.vin or '' }}"></label>
+  <label>Mileage (km) <input name="mileage" type="number" min="0" value="{{ v.mileage if v.mileage is not none else '' }}"></label>
+  <label>Notes <textarea name="notes">{{ v.notes or '' }}</textarea></label>
+  <button>Save</button>
+</form>
+{% endblock %}

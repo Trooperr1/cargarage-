@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>Admin</h1>
+<div class="grid2">
+<div class="card">
+  <h2>Data safety</h2>
+  <p>Database check: {% if ok %}<b class="ok">✔ OK</b>{% else %}<b class="owed">✖ {{ result }} ({{ broken }} broken links)</b>{% endif %}</p>
+  <form method="post" action="{{ url_for('admin_backup') }}">{{ csrf_field() }}<button>💾 Make backup & download</button></form>
+  <p class="muted small">A backup is also made automatically each time the program starts. Last 30 are kept. Copy them to a USB stick or cloud regularly!</p>
+  <details><summary>{{ backups|length }} backups on this computer</summary>{% for b in backups %}<div class="small">{{ b }}</div>{% endfor %}</details>
+  <h3>Export to Excel (CSV)</h3>
+  <p>{% for t in tables %}<a class="btn small light" href="{{ url_for('export_csv', table=t) }}">{{ t }}</a> {% endfor %}</p>
+</div>
+<form method="post" class="card">{{ csrf_field() }}
+  <h2>Add user</h2>
+  <label>Username <input name="username" required></label>
+  <label>Full name <input name="full_name" required></label>
+  <label>Password (6+ characters) <input name="password" type="password" required minlength="6"></label>
+  <label>Role <select name="role"><option value="staff">staff</option><option value="admin">admin</option></select></label>
+  <button>Create</button>
+</form>
+</div>
+<h2>Users</h2>
+<table><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
+{% for u in users %}<tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role }}</td><td>{{ 'active' if u.active else 'disabled' }}</td>
+<td><form method="post" action="{{ url_for('user_toggle', uid=u.id) }}" class="inline">{{ csrf_field() }}<button class="small light">{{ 'Disable' if u.active else 'Enable' }}</button></form></td></tr>{% endfor %}
+</table>
+<h2>Activity log (last 100)</h2>
+<table><tr><th>When</th><th>User</th><th>Action</th><th>What</th><th>Details</th></tr>
+{% for a in log %}<tr><td>{{ a.created_at }}</td><td>{{ a.username or '' }}</td><td>{{ a.action }}</td><td>{{ a.entity }} {{ '#' ~ a.entity_id if a.entity_id }}</td><td>{{ a.details or '' }}</td></tr>{% endfor %}
+</table>
+{% endblock %}

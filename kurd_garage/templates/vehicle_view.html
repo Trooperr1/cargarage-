@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table with context %}
+{% block content %}
+<h1>{{ row.plate }} — {{ row.make }} {{ row.model }} {{ row.year or '' }}</h1>
+<div class="card">
+  <p>Owner: <a href="{{ url_for('customer_view', cid=row.customer_id) }}">{{ row.owner }}</a> ({{ row.phone }})</p>
+  <p>Color: {{ row.color or '-' }} · VIN: {{ row.vin or '-' }} · Mileage: {{ '{:,}'.format(row.mileage) ~ ' km' if row.mileage is not none else '-' }}</p>
+  {% if row.notes %}<p class="muted">{{ row.notes }}</p>{% endif %}
+  <a class="btn" href="{{ url_for('job_new', vid=row.id) }}">+ New job</a>
+  <a class="btn light" href="{{ url_for('vehicle_form', vid=row.id) }}">Edit</a>
+  {% if session.role == 'admin' %}
+  <form method="post" action="{{ url_for('vehicle_delete', vid=row.id) }}" class="inline" onsubmit="return confirm('Delete this car?')">{{ csrf_field() }}<button class="danger">Delete</button></form>
+  {% endif %}
+</div>
+<h2>Service history</h2>
+{{ job_table(jobs, false) }}
+{% endblock %}

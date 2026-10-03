@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>{{ row.name }} <span class="muted">{{ row.part_number }}</span></h1>
+<div class="grid2">
+<div class="card">
+  <p>In stock: <b class="{{ 'owed' if row.quantity <= row.reorder_level }}">{{ row.quantity }}</b> (warn at {{ row.reorder_level }})</p>
+  <p>Cost {{ row.cost_price|money }} · Sell {{ row.sell_price|money }}</p>
+  <p>Supplier: {{ row.supplier or '-' }} · Location: {{ row.location or '-' }}</p>
+  <a class="btn light" href="{{ url_for('part_form', pid=row.id) }}">Edit</a>
+</div>
+<form method="post" action="{{ url_for('part_stock', pid=row.id) }}" class="card">{{ csrf_field() }}
+  <h2>Add / adjust stock</h2>
+  <label>Quantity (use minus to remove) <input name="change" type="number" required></label>
+  <label>Reason <select name="reason"><option value="purchase">purchase (bought new stock)</option><option value="adjustment">adjustment (count correction, damaged…)</option></select></label>
+  <label>Note <input name="note"></label>
+  <button>Save</button>
+</form>
+</div>
+<h2>Stock history</h2>
+<table><tr><th>Date</th><th class="num">Change</th><th>Reason</th><th>Job</th><th>Note</th><th>By</th></tr>
+{% for m in moves %}<tr><td>{{ m.created_at }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td>{{ m.reason }}</td>
+<td>{% if m.job_id %}<a href="{{ url_for('job_view', jid=m.job_id) }}">#{{ m.job_id }}</a>{% endif %}</td><td>{{ m.note or '' }}</td><td>{{ m.who or '' }}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">No movements.</td></tr>{% endfor %}</table>
+{% endblock %}

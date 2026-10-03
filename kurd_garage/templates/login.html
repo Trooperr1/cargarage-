@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<div class="login card">
+  <h1>🔧 {{ garage }}</h1>
+  <form method="post">{{ csrf_field() }}
+    <label>Username <input name="username" required autofocus></label>
+    <label>Password <input type="password" name="password" required></label>
+    <button>Log in</button>
+  </form>
+</div>
+{% endblock %}

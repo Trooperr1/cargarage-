@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Customers</h1>
+<form class="toolbar"><input name="q" value="{{ request.args.q or '' }}" placeholder="Name or phone"><button>Search</button>
+<a class="btn" href="{{ url_for('customer_form') }}">+ New customer</a></form>
+<table><tr><th>Name</th><th>Phone</th><th>Address</th><th class="num">Cars</th></tr>
+{% for c in rows %}<tr><td><a href="{{ url_for('customer_view', cid=c.id) }}">{{ c.name }}</a></td><td>{{ c.phone }}</td><td>{{ c.address or '' }}</td><td class="num">{{ c.cars }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No customers yet.</td></tr>{% endfor %}</table>
+{% endblock %}

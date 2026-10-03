@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Invoice #{{ job.id }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="invoice">
+<div class="inv-head">
+  <div><h1>🔧 {{ garage }}</h1></div>
+  <div class="right"><h2>INVOICE #{{ job.id }}</h2><p>{{ job.opened_at[:10] }}</p></div>
+</div>
+<div class="grid2">
+  <div><b>Customer</b><br>{{ job.customer }}<br>{{ job.phone }}</div>
+  <div><b>Car</b><br>{{ vehicle.plate }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year or '' }}<br>
+  {% if job.mileage_in is not none %}Mileage: {{ '{:,}'.format(job.mileage_in) }} km{% endif %}</div>
+</div>
+<p><b>Problem:</b> {{ job.complaint }}</p>
+{% if job.diagnosis %}<p><b>Work done:</b> {{ job.diagnosis }}</p>{% endif %}
+<table>
+  <tr><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th></tr>
+  {% for i in items %}<tr><td>{{ i.description }}</td><td class="num">{{ i.quantity }}</td><td class="num">{{ i.unit_price|money }}</td><td class="num">{{ (i.quantity * i.unit_price)|money }}</td></tr>{% endfor %}
+</table>
+<table class="totals right-box">
+  <tr><td>Labour</td><td class="num">{{ totals.labour|money }}</td></tr>
+  <tr><td>Parts</td><td class="num">{{ totals.parts|money }}</td></tr>
+  {% if totals.discount %}<tr><td>Discount</td><td class="num">- {{ totals.discount|money }}</td></tr>{% endif %}
+  <tr class="big"><td>Total</td><td class="num">{{ totals.total|money }}</td></tr>
+  <tr><td>Paid</td><td class="num">{{ totals.paid|money }}</td></tr>
+  <tr class="big"><td>Balance</td><td class="num">{{ (totals.total - totals.paid)|money }}</td></tr>
+</table>
+<p class="muted center">Thank you for choosing {{ garage }}!</p>
+<p class="no-print center"><button onclick="window.print()">🖨 Print</button></p>
+</body></html>

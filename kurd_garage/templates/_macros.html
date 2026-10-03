@@ -1,0 +1,21 @@
+{% macro csrf_field() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+
+{% macro status_badge(s) %}<span class="badge s-{{ s }}">{{ s.replace('_', ' ') }}</span>{% endmacro %}
+
+{% macro job_table(rows, show_customer=true) %}
+<table>
+  <tr><th>#</th><th>Date</th>{% if show_customer %}<th>Customer</th>{% endif %}<th>Car</th><th>Mechanic</th><th>Status</th><th class="num">Total</th><th class="num">Owed</th></tr>
+  {% for j in rows %}
+  <tr>
+    <td><a href="{{ url_for('job_view', jid=j.id) }}">#{{ j.id }}</a></td>
+    <td>{{ j.opened_at[:10] }}</td>
+    {% if show_customer %}<td><a href="{{ url_for('customer_view', cid=j.customer_id) }}">{{ j.customer }}</a></td>{% endif %}
+    <td><a href="{{ url_for('vehicle_view', vid=j.vehicle_id) }}">{{ j.plate }}</a> {{ j.make }} {{ j.model }}</td>
+    <td>{{ j.mechanic or '-' }}</td>
+    <td>{{ status_badge(j.status) }}</td>
+    <td class="num">{{ j.total|money }}</td>
+    <td class="num {% if j.total > j.paid and j.status != 'cancelled' %}owed{% endif %}">{{ (j.total - j.paid)|money }}</td>
+  </tr>
+  {% else %}<tr><td colspan="8" class="muted">No jobs.</td></tr>{% endfor %}
+</table>
+{% endmacro %}

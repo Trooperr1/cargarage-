@@ -1,0 +1,10 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>Suppliers</h1>
+<form method="post" class="card row">{{ csrf_field() }}
+  <input name="name" placeholder="Name *" required><input name="phone" placeholder="Phone"><input name="address" placeholder="Address"><button>+ Add</button>
+</form>
+<table><tr><th>Name</th><th>Phone</th><th>Address</th></tr>
+{% for s in rows %}<tr><td>{{ s.name }}</td><td>{{ s.phone or '' }}</td><td>{{ s.address or '' }}</td></tr>
+{% else %}<tr><td colspan="3" class="muted">No suppliers.</td></tr>{% endfor %}</table>
+{% endblock %}
