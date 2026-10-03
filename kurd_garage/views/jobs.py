@@ -6,7 +6,7 @@ from core import (JOB_STATUSES, UNITS, audit, checkbox, choice, default_vat, err
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
 JOB_LIST_SQL = """
-SELECT j.*, v.plate, v.make, v.model, v.customer_id, c.display_name AS customer, c.mobile, c.phone,
+SELECT j.*, v.plate, v.make, v.model, v.customer_id, (v.body_type = 'counter') AS is_counter, c.display_name AS customer, c.mobile, c.phone,
        e.full_name AS employee,
        (SELECT COALESCE(SUM(net), 0) FROM job_items WHERE job_id = j.id) AS net,
        (SELECT number FROM invoices WHERE job_id = j.id AND status = 'issued') AS invoice_number,
@@ -86,6 +86,23 @@ def new(vid):
     employees = q("SELECT * FROM employees WHERE active = 1 ORDER BY first_name")
     return render_template("job_new.html", vehicle=vehicle, employees=employees, appt=appt,
                            kind=request.args.get("kind", "job"))
+
+
+@bp.route("/counter/<int:cid>", methods=["POST"])
+@login_required
+def counter_sale(cid):
+    """Sale over the counter (parts only, no vehicle). Uses a hidden placeholder 'vehicle' per customer."""
+    or_404(q("SELECT id FROM customers WHERE id = ?", (cid,), one=True))
+    conn = get_db()
+    vid = q1("SELECT id FROM vehicles WHERE customer_id = ? AND body_type = 'counter'", (cid,))
+    if not vid:
+        vid = conn.execute("INSERT INTO vehicles (customer_id, make, model, body_type, active) "
+                           "VALUES (?, 'Counter sale', '-', 'counter', 0)", (cid,)).lastrowid
+    jid = conn.execute("INSERT INTO jobs (vehicle_id, status, complaint, created_by) VALUES (?, 'open', 'Counter sale', ?)",
+                       (vid, session["user_id"])).lastrowid
+    audit("create", "job", jid, "counter sale")
+    conn.commit()
+    return job_redirect(jid, "#add")
 
 
 @bp.route("/<int:jid>")

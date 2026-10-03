@@ -75,7 +75,7 @@ def edit(aid=None):
     preset_vehicle = to_int(request.args.get("vehicle"))
     customers = q("SELECT id, display_name, mobile, phone FROM customers ORDER BY display_name")
     vehicles = q("""SELECT v.id, v.plate, v.make, v.model, v.customer_id, c.display_name AS owner FROM vehicles v
-                    JOIN customers c ON c.id = v.customer_id WHERE v.active = 1 ORDER BY v.plate""")
+                    JOIN customers c ON c.id = v.customer_id WHERE v.active = 1 AND COALESCE(v.body_type, '') <> 'counter' ORDER BY v.plate""")
     employees = q("SELECT * FROM employees WHERE active = 1 ORDER BY first_name")
     return render_template("appointment_form.html", row=row, customers=customers, vehicles=vehicles,
                            employees=employees, preset_vehicle=preset_vehicle,

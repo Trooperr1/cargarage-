@@ -76,6 +76,7 @@ def index():
                     GROUP BY i.description ORDER BY net DESC LIMIT 15""", rng)
     makes = q("""SELECT v.make, COUNT(DISTINCT j.id) AS jobs FROM jobs j JOIN vehicles v ON v.id = j.vehicle_id
                  WHERE j.status NOT IN ('quote','cancelled') AND date(j.opened_at) BETWEEN ? AND ?
+                   AND COALESCE(v.body_type, '') <> 'counter'
                  GROUP BY v.make ORDER BY jobs DESC LIMIT 10""", rng)
     new_customers = q1("SELECT COUNT(*) FROM customers WHERE date(created_at) BETWEEN ? AND ?", rng)
     jobs_count = q1("SELECT COUNT(*) FROM jobs WHERE status NOT IN ('quote','cancelled') AND date(opened_at) BETWEEN ? AND ?", rng)

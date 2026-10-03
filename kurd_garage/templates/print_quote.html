@@ -5,7 +5,7 @@
 {% from "_macros.html" import print_header with context %}
 {{ print_header('QUOTE', 'No. Q-' ~ job.id, today|d) }}
 <div class="address-window">{% for l in address %}{{ l }}<br>{% endfor %}</div>
-<p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}</p>
+{% if vehicle.body_type != 'counter' %}<p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}</p>{% endif %}
 <p><b>Your request:</b> {{ job.complaint }}</p>
 {% if job.diagnosis %}<p>{{ job.diagnosis }}</p>{% endif %}
 {% with subtotal=totals.subtotal, breakdown=totals.breakdown, rounding=totals.rounding, total=totals.total %}{% include "_print_items.html" %}{% endwith %}

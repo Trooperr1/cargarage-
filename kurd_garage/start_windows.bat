@@ -11,6 +11,8 @@ if not exist .venv\Scripts\python.exe (
     echo Installing, please wait...
     .venv\Scripts\python -m pip install -r requirements.txt || goto error
 )
+rem Create / update the "Kurd Garage" icon on the desktop
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop')+'\Kurd Garage.lnk');$s.TargetPath='%~dp0start_windows.bat';$s.WorkingDirectory='%~dp0';$s.IconLocation='%SystemRoot%\System32\shell32.dll,12';$s.Save()" >nul 2>nul
 .venv\Scripts\python app.py
 :error
 echo.

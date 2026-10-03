@@ -307,7 +307,8 @@ class NewFeatures(Base):
         self.post("/expenses/", spent_on=core.today(), category="office", description="Coffee", amount="12.50",
                   vat_rate="0", method="cash")
         r = self.get("/reports/cash")
-        self.assertIn(b"CHF 37.50", r.data)          # 50.00 in - 12.50 out
+        self.assertIn(b"Sara Ahmed</td><td class=\"num\">50.00", r.data)
+        self.assertIn(b"office: Coffee</td><td class=\"num\"></td>\n<td class=\"num\">12.50", r.data)
         # tyre label
         self.post(f"/tyres/new/{vid}", season="winter", status="stored", location="C-3")
         tid = self.one("SELECT id FROM tyre_sets WHERE vehicle_id=?", vid)
@@ -333,6 +334,29 @@ class NewFeatures(Base):
         self.assertIn(b"Page not found", r.data)
         r = self.post("/admin/restore", files={"file": (io.BytesIO(b"junk"), "x.zip")}, confirm="RESTORE")
         self.assertIn(b"not a Kurd Garage backup", r.data)
+
+    def test_counter_sale(self):
+        r = self.post("/customers/new", first_name="Walk", last_name="In", mobile="076 000 11 22")
+        cid = self.new_id(r)
+        r = self.post("/parts/new", part_number="WB-1", name="Wiper blade", sell_price="19.90", quantity="5")
+        pid = self.new_id(r)
+        r = self.post(f"/jobs/counter/{cid}")
+        jid = self.new_id(r)
+        self.assertIn(b"Counter sale", r.data)
+        self.post(f"/jobs/{jid}/items", kind="part", part_id=str(pid), quantity="2")
+        self.assertEqual(self.one("SELECT quantity FROM parts WHERE id=?", pid), 3)
+        with garage.app.test_request_context():
+            total = core.job_totals(jid)["total"]
+        r = self.post(f"/invoices/create/{jid}", paid_now=core.rappen_input(total), method="cash")
+        inv = self.new_id(r)
+        self.assertEqual(self.one("SELECT open_amount FROM invoice_balance WHERE id=?", inv), 0)
+        r = self.get(f"/invoices/{inv}/print")
+        self.assertNotIn(b"Vehicle:", r.data)
+        # the placeholder never shows up as a vehicle, and is reused
+        self.assertNotIn(b"Counter sale", self.get("/vehicles/").data)
+        self.assertNotIn(b"Counter sale", self.get(f"/customers/{cid}").data.split(b"<h2>Vehicles</h2>")[1].split(b"<h2>")[0])
+        self.post(f"/jobs/counter/{cid}")
+        self.assertEqual(self.one("SELECT COUNT(*) FROM vehicles WHERE customer_id=?", cid), 1)
 
     def test_login_lockout(self):
         c = garage.app.test_client()

@@ -57,7 +57,7 @@
     <td><a href="{{ url_for('jobs.view', jid=j.id) }}">#{{ j.id }}</a></td>
     <td>{{ j.opened_at|d }}{% if j.promised_at %}<div class="small muted">due {{ j.promised_at|replace('T',' ')|d }}</div>{% endif %}</td>
     {% if show_customer %}<td><a href="{{ url_for('customers.view', cid=j.customer_id) }}">{{ j.customer }}</a></td>{% endif %}
-    <td><a href="{{ url_for('vehicles.view', vid=j.vehicle_id) }}">{{ j.plate or '—' }}</a> <span class="muted">{{ j.make }} {{ j.model }}</span></td>
+    <td>{% if j.is_counter %}<span class="muted">counter sale</span>{% else %}<a href="{{ url_for('vehicles.view', vid=j.vehicle_id) }}">{{ j.plate or '—' }}</a> <span class="muted">{{ j.make }} {{ j.model }}</span>{% endif %}</td>
     <td class="clip">{{ j.complaint }}</td>
     <td>{{ j.employee or '—' }}</td>
     <td>{{ status_badge(j.status) }}{% if j.customer_waiting %} <span class="badge s-cancelled" title="Customer is waiting">waiting</span>{% endif %}</td>

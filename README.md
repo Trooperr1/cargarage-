@@ -12,7 +12,7 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 | **Customers** | Private or company, salutation, Swiss address (street, no., postcode, city, canton), mobile, phone, e-mail, UID, payment terms, standard discount, source, notes, files, revenue and open balance |
 | **Vehicles** | Plate (auto-formatted `ZH 123456`), VIN (17-char check), master number (Stammnummer), type approval, 1st registration, fuel, gearbox, drive, ccm, kW/PS, oil spec, tyre sizes, key/radio code, **MFK last/next**, next service date/km, mileage history with tampering warning, owner change, printable service history |
 | **Calendar** | Week view, appointments for customers or new callers, mechanic, duration, courtesy car, "vehicle arrived → open job" |
-| **Jobs & quotes** | Quote → job, check-in (km, fuel level, existing damage), promised time, customer waiting, mechanic, standard services, labour hours, parts (by list, part number or barcode), other items, per-line discount and VAT, findings, recommendations, internal notes, time tracking, photos, copy job, printable job card and quote |
+| **Jobs & quotes** | Quote → job, check-in (km, fuel level, existing damage), promised time, customer waiting, mechanic, standard services, labour hours, parts (by list, part number or barcode), other items, per-line discount and VAT, findings, recommendations, internal notes, time tracking, photos, copy job, printable job card and quote, **counter sale** (parts without a vehicle) |
 | **Invoices** | Sequential numbers (2026-0001), frozen after issue (can only be cancelled), 5-Rappen rounding, VAT breakdown, **QR-bill (IBAN or QR-IBAN)**, partial payments (cash, card, TWINT, bank transfer), payment reminders 1–3 with fees, print/PDF |
 | **Parts & stock** | Part no., EAN, brand, category, unit (pc/l/kg/m/set), supplier, cost/sell price and margin, stock with automatic movements, deliveries, corrections, stock counts, order list per supplier, stock value report |
 | **Tyre hotel** | Sets per vehicle (summer/winter), brand, size, DOT, rims, tread depth ×4 with legal-minimum warning, storage place (no double use), one-click seasonal change, printable labels for the 4 wheels |
@@ -39,7 +39,7 @@ expenses, VAT (MWST) and business reports. It runs on your own computer and you 
 
 1. Install **Python 3.10+** from https://www.python.org/downloads/ (answer **y** to the PATH and install questions).
 2. Download this project as ZIP and extract it.
-3. Double-click `kurd_garage/start_windows.bat` (the first start installs everything, about 1–2 minutes).
+3. Double-click `kurd_garage/start_windows.bat` (the first start installs everything, about 1–2 minutes). It also puts a **Kurd Garage** icon on your desktop for next time.
 4. The browser opens **http://127.0.0.1:5000**. Keep the black window open while working.
 5. Log in with **admin / admin123** and change the password right away (top right → *password*).
 6. Go to **Admin → Garage settings** and enter your address, phone, IBAN, UID/VAT number and hourly rate.

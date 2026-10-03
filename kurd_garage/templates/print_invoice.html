@@ -18,8 +18,8 @@
     <tr class="big"><td>Amount due</td><td class="num">{{ amount|chf }}</td></tr>
   </table>
 {% else %}
-  <p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}<br>
-  <b>Job:</b> #{{ job.id }} · {{ job.opened_at|d }}</p>
+  {% if vehicle.body_type != 'counter' %}<p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}<br>
+  <b>Job:</b> #{{ job.id }} · {{ job.opened_at|d }}</p>{% else %}<p><b>Sale</b> #{{ job.id }} · {{ job.opened_at|d }}</p>{% endif %}
   {% if job.diagnosis %}<p><b>Work done:</b> {{ job.diagnosis }}</p>{% else %}<p><b>Order:</b> {{ job.complaint }}</p>{% endif %}
   {% with subtotal=inv.subtotal, rounding=inv.rounding, total=inv.total %}{% include "_print_items.html" %}{% endwith %}
   {% if payments or inv.fees %}<table class="totals right-box">{% if inv.fees %}<tr><td>Reminder fees</td><td class="num">{{ inv.fees|chf }}</td></tr>{% endif %}{% for p in payments %}<tr><td>Paid {{ p.paid_on|d }} ({{ p.method }})</td><td class="num">- {{ p.amount|chf }}</td></tr>{% endfor %}

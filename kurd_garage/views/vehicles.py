@@ -52,8 +52,8 @@ def index():
     rows = q("""SELECT v.*, c.display_name AS owner,
                   (SELECT MAX(opened_at) FROM jobs WHERE vehicle_id = v.id) AS last_visit
                 FROM vehicles v JOIN customers c ON c.id = v.customer_id
-                WHERE replace(v.plate,' ','') LIKE ? OR v.make LIKE ? OR v.model LIKE ? OR c.display_name LIKE ?
-                   OR v.vin LIKE ? OR v.master_number LIKE ?
+                WHERE COALESCE(v.body_type, '') <> 'counter' AND (replace(v.plate,' ','') LIKE ? OR v.make LIKE ? OR v.model LIKE ? OR c.display_name LIKE ?
+                   OR v.vin LIKE ? OR v.master_number LIKE ?)
                 ORDER BY v.active DESC, v.plate""", (f"%{term.replace(' ', '')}%", like, like, like, like, like))
     return render_template("vehicles.html", rows=rows)
 

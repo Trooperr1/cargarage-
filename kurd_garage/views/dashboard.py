@@ -67,8 +67,8 @@ def search():
                                 OR email LIKE ? OR city LIKE ? ORDER BY display_name LIMIT 50""", (like,) * 5)
         compact = term.replace(" ", "")
         res["vehicles"] = q("""SELECT v.*, c.display_name AS owner FROM vehicles v JOIN customers c ON c.id = v.customer_id
-                               WHERE replace(v.plate,' ','') LIKE ? OR v.vin LIKE ? OR v.master_number LIKE ?
-                               OR v.make LIKE ? OR v.model LIKE ? LIMIT 50""", (f"%{compact}%", like, like, like, like))
+                               WHERE COALESCE(v.body_type, '') <> 'counter' AND (replace(v.plate,' ','') LIKE ? OR v.vin LIKE ? OR v.master_number LIKE ?
+                               OR v.make LIKE ? OR v.model LIKE ?) LIMIT 50""", (f"%{compact}%", like, like, like, like))
         res["invoices"] = q("""SELECT b.*, c.display_name AS customer FROM invoice_balance b JOIN customers c ON c.id = b.customer_id
                                WHERE b.number LIKE ? LIMIT 20""", (like,))
         res["parts"] = q("SELECT * FROM parts WHERE name LIKE ? OR part_number LIKE ? OR ean = ? LIMIT 20", (like, like, term))

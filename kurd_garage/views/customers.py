@@ -32,7 +32,7 @@ def index():
     term = request.args.get("q", "").strip()
     like = f"%{term}%"
     rows = q("""SELECT c.*,
-                  (SELECT COUNT(*) FROM vehicles WHERE customer_id = c.id) AS cars,
+                  (SELECT COUNT(*) FROM vehicles WHERE customer_id = c.id AND COALESCE(body_type, '') <> 'counter') AS cars,
                   (SELECT COALESCE(SUM(open_amount),0) FROM invoice_balance WHERE customer_id = c.id AND status='issued') AS open_amount,
                   (SELECT MAX(opened_at) FROM jobs j JOIN vehicles v ON v.id = j.vehicle_id WHERE v.customer_id = c.id) AS last_visit
                 FROM customers c
@@ -75,7 +75,8 @@ def edit(cid=None):
 @login_required
 def view(cid):
     row = or_404(q("SELECT * FROM customers WHERE id = ?", (cid,), one=True))
-    vehicles = q("SELECT * FROM vehicles WHERE customer_id = ? ORDER BY active DESC, plate", (cid,))
+    vehicles = q("SELECT * FROM vehicles WHERE customer_id = ? AND COALESCE(body_type, '') <> 'counter' "
+                 "ORDER BY active DESC, plate", (cid,))
     jobs = q(JOB_LIST_SQL + " WHERE v.customer_id = ? ORDER BY j.id DESC", (cid,))
     invoices = q("SELECT * FROM invoice_balance WHERE customer_id = ? ORDER BY id DESC", (cid,))
     stats = {

@@ -13,13 +13,14 @@
 </div>
 
 <div class="grid3">
+  {% if job.is_counter %}<div class="card"><h3>Counter sale</h3><p>Parts sold over the counter, no vehicle.</p></div>{% else %}
   <div class="card">
     <h3>Vehicle</h3>
     <p><a href="{{ url_for('vehicles.view', vid=job.vehicle_id) }}"><span class="plate">{{ job.plate or 'no plate' }}</span></a> {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}</p>
     <p class="small">VIN {{ vehicle.vin or '—' }} · {{ vehicle.fuel or '' }} {{ (vehicle.power_kw ~ ' kW') if vehicle.power_kw else '' }} · Oil {{ vehicle.oil_spec or '—' }}</p>
     <p class="small">km in: <b>{{ job.mileage_in|km or '—' }}</b> · Fuel: {{ job.fuel_level or '—' }} · Next MFK: {{ vehicle.mfk_next|d or '—' }}</p>
     {% if job.damages %}<p class="small">⚠ Damage at check-in: {{ job.damages }}</p>{% endif %}
-  </div>
+  </div>{% endif %}
   <div class="card">
     <h3>Customer</h3>
     <p><a href="{{ url_for('customers.view', cid=job.customer_id) }}"><b>{{ job.customer }}</b></a></p>

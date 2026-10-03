@@ -2,6 +2,7 @@
 {% block content %}
 <div class="titlebar"><h1>{{ row.display_name }}{% if row.kind == 'company' %} <span class="badge">company</span>{% endif %}</h1>
 <div><a class="btn" href="{{ url_for('vehicles.edit', cid=row.id) }}">+ Add vehicle</a>
+<form method="post" action="{{ url_for('jobs.counter_sale', cid=row.id) }}" class="inline">{{ csrf_field() }}<button class="light" title="Sell parts without a vehicle">+ Counter sale</button></form>
 <a class="btn light" href="{{ url_for('customers.edit', cid=row.id) }}">Edit</a>
 {% if session.role == 'admin' %}<form method="post" action="{{ url_for('customers.delete', cid=row.id) }}" class="inline" onsubmit="return confirm('Delete this customer?')">{{ csrf_field() }}<button class="danger">Delete</button></form>{% endif %}</div></div>
 
