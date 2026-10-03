@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="titlebar"><h1>Staff</h1><div><form class="inline"><input type="month" name="month" value="{{ month }}" onchange="this.form.submit()"></form>
+<a class="btn" href="{{ url_for('staff.edit') }}">+ New employee</a></div></div>
+<div class="tablewrap"><table><tr><th>Name</th><th>Role</th><th>Phone</th><th class="num">Active jobs</th><th class="num">Hours worked</th><th class="num">Hours billed</th><th class="num">Efficiency</th><th class="num">Labour billed</th></tr>
+{% for e in rows %}<tr class="{{ '' if e.active else 'muted' }}"><td><a href="{{ url_for('staff.view', eid=e.id, month=month) }}">{{ e.full_name }}</a></td><td>{{ e.role }}</td><td>{{ e.phone or '' }}</td>
+<td class="num">{{ e.active_jobs }}</td><td class="num">{{ e.hours_month|qty }}</td><td class="num">{{ e.billed_month|qty }}</td>
+<td class="num">{{ ((e.billed_month / e.hours_month * 100)|round|int ~ '%') if e.hours_month else '' }}</td><td class="num">{{ e.labour_month|chf(false) }}</td></tr>
+{% else %}<tr><td colspan="8" class="muted">No employees yet. Add your mechanics so you can assign jobs and track time.</td></tr>{% endfor %}</table></div>
+<p class="small muted">Efficiency = hours billed to customers ÷ hours worked. Above 85% is very good.</p>
+{% endblock %}

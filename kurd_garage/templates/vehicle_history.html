@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Service history {{ row.plate or '' }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="paper">
+{% from "_macros.html" import print_header with context %}
+{{ print_header('Service history', row.plate or '', today|d) }}
+<p><b>{{ row.make }} {{ row.model }} {{ row.variant or '' }}</b> · VIN {{ row.vin or '—' }} · 1st reg. {{ row.first_registration|d or row.year or '—' }} · Owner: {{ row.owner }}</p>
+{% for j in jobs %}
+<div class="history-entry">
+  <h3>{{ j.opened_at|d }} — {{ j.mileage_in|km or 'km not recorded' }}</h3>
+  <p><b>{{ j.complaint }}</b>{% if j.diagnosis %}<br>{{ j.diagnosis }}{% endif %}</p>
+  <ul class="compact">{% for i in items[j.id] %}<li>{{ i.description }} {% if i.kind == 'part' %}({{ i.quantity|qty }} {{ i.unit }}){% endif %}</li>{% endfor %}</ul>
+</div>
+{% else %}<p>No work recorded yet.</p>{% endfor %}
+<p class="no-print center"><button onclick="window.print()">🖨 Print</button></p>
+</body></html>

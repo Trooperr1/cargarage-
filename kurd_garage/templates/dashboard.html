@@ -1,22 +1,46 @@
-{% extends "base.html" %}{% from "_macros.html" import job_table with context %}
+{% extends "base.html" %}{% from "_macros.html" import job_table, contact, due_badge with context %}
 {% block content %}
-<h1>Dashboard</h1>
+<div class="titlebar"><h1>Dashboard <span class="muted small">{{ today|d }}</span></h1>
+  <div><a class="btn" href="{{ url_for('customers.edit') }}">+ New customer</a>
+  <a class="btn light" href="{{ url_for('appointments.edit') }}">+ Appointment</a>
+  <a class="btn light" href="{{ url_for('vehicles.index') }}">+ Job (choose vehicle)</a></div></div>
+
 <div class="stats">
-  <a class="stat" href="{{ url_for('jobs', status='in_progress') }}"><b>{{ stats.open_jobs }}</b><span>Cars in work</span></a>
-  <a class="stat" href="{{ url_for('jobs', status='done') }}"><b>{{ stats.ready }}</b><span>Ready for pickup</span></a>
-  <div class="stat"><b>{{ stats.today_income|money }}</b><span>Income today</span></div>
-  <div class="stat"><b>{{ stats.month_income|money }}</b><span>Income this month</span></div>
-  <a class="stat warn" href="{{ url_for('jobs', status='unpaid') }}"><b>{{ stats.unpaid|money }}</b><span>Customers owe</span></a>
-  <a class="stat" href="{{ url_for('customers') }}"><b>{{ stats.customers }}</b><span>Customers</span></a>
+  <a class="stat" href="{{ url_for('jobs.index', status='active') }}"><b>{{ stats.in_work }}</b><span>Vehicles in work</span></a>
+  <a class="stat good" href="{{ url_for('jobs.index', status='done') }}"><b>{{ stats.ready }}</b><span>Ready for pickup</span></a>
+  <a class="stat" href="{{ url_for('jobs.index', status='quote') }}"><b>{{ stats.quotes }}</b><span>Open quotes</span></a>
+  <div class="stat"><b>{{ stats.today_in|chf }}</b><span>Received today</span></div>
+  <div class="stat"><b>{{ stats.month_invoiced|chf }}</b><span>Invoiced this month (net)</span></div>
+  <div class="stat"><b>{{ stats.month_in|chf }}</b><span>Received this month</span></div>
+  <a class="stat" href="{{ url_for('invoices.index', filter='open') }}"><b>{{ stats.open|chf }}</b><span>Open invoices</span></a>
+  <a class="stat {{ 'warn' if stats.overdue }}" href="{{ url_for('invoices.index', filter='overdue') }}"><b>{{ stats.overdue|chf }}</b><span>Overdue</span></a>
 </div>
-<p><a class="btn" href="{{ url_for('customer_form') }}">+ New customer</a>
-   <a class="btn light" href="{{ url_for('vehicles') }}">+ New job (pick a car)</a></p>
-<h2>Active jobs</h2>
+
+<div class="grid2">
+<div>
+  <h2>📅 Today's appointments</h2>
+  <div class="tablewrap"><table>
+  {% for a in appts %}<tr>
+    <td>{{ a.starts_at[11:16] }}</td>
+    <td><a href="{{ url_for('appointments.edit', aid=a.id) }}">{{ a.title }}</a><div class="small muted">{{ a.customer or a.contact_name }} {{ a.plate or '' }}</div></td>
+    <td>{{ a.employee or '' }}</td>
+    <td>{% if a.job_id %}<a href="{{ url_for('jobs.view', jid=a.job_id) }}">job #{{ a.job_id }}</a>{% elif a.vehicle_id %}<a class="btn small" href="{{ url_for('jobs.new', vid=a.vehicle_id, appointment=a.id) }}">Check in</a>{% endif %}</td>
+  </tr>{% else %}<tr><td class="muted">No appointments today.</td></tr>{% endfor %}
+  </table></div>
+</div>
+<div>
+  <h2>🔔 Reminders</h2>
+  <div class="card tight">
+  {% if tyre_season %}<p>🛞 <b>Tyre season!</b> {{ stats.tyres }} sets in the tyre hotel. <a href="{{ url_for('tyres.index') }}">Open tyre hotel</a></p>{% endif %}
+  {% if overdue %}<p><b>💸 Overdue invoices</b></p><ul class="compact">{% for i in overdue %}<li><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a> {{ i.customer }} — {{ i.open_amount|chf }} {% if i.dunning_level %}<span class="muted">(reminder {{ i.dunning_level }})</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+  {% if mfk %}<p><b>🚦 MFK due soon</b></p><ul class="compact">{% for v in mfk %}<li><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or v.make }}</a> {{ v.customer }} — {{ due_badge(v.mfk_next) }} {{ contact(v) }}</li>{% endfor %}</ul>{% endif %}
+  {% if service %}<p><b>🛠 Service due</b></p><ul class="compact">{% for v in service %}<li><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or v.make }}</a> {{ v.customer }} — {{ due_badge(v.service_next_date) }} {{ contact(v) }}</li>{% endfor %}</ul>{% endif %}
+  {% if low %}<p><b>📦 Low stock</b> — <a href="{{ url_for('parts.order_list') }}">order list</a></p><ul class="compact">{% for p in low %}<li><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a> — {{ p.quantity|qty }} {{ p.unit }} left</li>{% endfor %}</ul>{% endif %}
+  {% if not (overdue or mfk or service or low or tyre_season) %}<p class="muted">Nothing to remind. 👍</p>{% endif %}
+  </div>
+</div>
+</div>
+
+<h2>🔧 Workshop</h2>
 {{ job_table(jobs) }}
-{% if low %}
-<h2>⚠ Low stock</h2>
-<table><tr><th>Part</th><th class="num">In stock</th><th class="num">Reorder at</th></tr>
-{% for p in low %}<tr><td><a href="{{ url_for('part_view', pid=p.id) }}">{{ p.name }}</a> <span class="muted">{{ p.part_number }}</span></td><td class="num owed">{{ p.quantity }}</td><td class="num">{{ p.reorder_level }}</td></tr>{% endfor %}
-</table>
-{% endif %}
 {% endblock %}

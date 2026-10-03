@@ -1,73 +1,147 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge, contact, files_block, check with context %}
 {% block content %}
-<h1>Job #{{ job.id }} {{ status_badge(job.status) }}</h1>
-<div class="card">
-  <p><b><a href="{{ url_for('vehicle_view', vid=job.vehicle_id) }}">{{ job.plate }}</a></b> {{ job.make }} {{ job.model }} ·
-     <a href="{{ url_for('customer_view', cid=job.customer_id) }}">{{ job.customer }}</a> ({{ job.phone }}) ·
-     opened {{ job.opened_at }}{% if job.closed_at %} · closed {{ job.closed_at }}{% endif %}{% if job.mileage_in is not none %} · {{ '{:,}'.format(job.mileage_in) }} km{% endif %}</p>
-  <p><b>Problem:</b> {{ job.complaint }}</p>
-  <a class="btn light" href="{{ url_for('job_invoice', jid=job.id) }}" target="_blank">🖨 Print invoice</a>
+{% set is_locked = job.invoice_id is not none %}
+<div class="titlebar">
+  <h1>{{ 'Quote' if job.status == 'quote' else 'Job' }} #{{ job.id }} {{ status_badge(job.status) }}{% if job.customer_waiting %} <span class="badge s-cancelled">customer waiting</span>{% endif %}</h1>
+  <div>
+    <a class="btn light" href="{{ url_for('jobs.printout', jid=job.id, kind='card') }}" target="_blank">🖨 Job card</a>
+    <a class="btn light" href="{{ url_for('jobs.printout', jid=job.id, kind='quote') }}" target="_blank">🖨 Quote</a>
+    {% if job.invoice_id %}<a class="btn" href="{{ url_for('invoices.view', iid=job.invoice_id) }}">Invoice {{ job.invoice_number }}</a>
+    {% elif job.status not in ('quote','cancelled') %}<a class="btn" href="{{ url_for('invoices.create', jid=job.id) }}">💶 Create invoice</a>{% endif %}
+    <form method="post" action="{{ url_for('jobs.copy', jid=job.id) }}" class="inline">{{ csrf_field() }}<button class="light" title="Copy all lines into a new job">Copy</button></form>
+  </div>
 </div>
 
-<div class="grid2">
-<form method="post" action="{{ url_for('job_update', jid=job.id) }}" class="card">{{ csrf_field() }}
-  <h2>Status & details</h2>
-  <label>Status <select name="status">{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == job.status }}>{{ s.replace('_',' ') }}</option>{% endfor %}</select></label>
-  <label>Mechanic <select name="mechanic_id"><option value="">— not assigned —</option>
-    {% for m in mechanics %}<option value="{{ m.id }}" {{ 'selected' if m.id == job.mechanic_id }}>{{ m.name }}</option>{% endfor %}</select></label>
-  <label>Diagnosis / work done <textarea name="diagnosis">{{ job.diagnosis or '' }}</textarea></label>
-  <label>Discount ({{ currency }}) <input name="discount" type="number" min="0" value="{{ job.discount }}"></label>
-  <button>Save</button>
-</form>
-
-<div class="card">
-  <h2>Money</h2>
-  <table class="totals">
-    <tr><td>Labour</td><td class="num">{{ totals.labour|money }}</td></tr>
-    <tr><td>Parts</td><td class="num">{{ totals.parts|money }}</td></tr>
-    <tr><td>Discount</td><td class="num">- {{ totals.discount|money }}</td></tr>
-    <tr class="big"><td>Total</td><td class="num">{{ totals.total|money }}</td></tr>
-    <tr><td>Paid</td><td class="num">{{ totals.paid|money }}</td></tr>
-    <tr class="big"><td>Still owed</td><td class="num {{ 'owed' if totals.total > totals.paid }}">{{ (totals.total - totals.paid)|money }}</td></tr>
-  </table>
-  {% if totals.total > totals.paid %}
-  <form method="post" action="{{ url_for('job_pay', jid=job.id) }}" class="row">{{ csrf_field() }}
-    <input name="amount" type="number" min="1" max="{{ totals.total - totals.paid }}" value="{{ totals.total - totals.paid }}" required>
-    <select name="method"><option>cash</option><option>card</option><option>transfer</option></select>
-    <input name="note" placeholder="note">
-    <button>Take payment</button>
-  </form>
-  {% endif %}
-  {% for p in payments %}<p class="muted small">{{ p.paid_at }} — {{ p.amount|money }} {{ p.method }} by {{ p.taken_by or '?' }} {{ p.note or '' }}</p>{% endfor %}
-</div>
+<div class="grid3">
+  <div class="card">
+    <h3>Vehicle</h3>
+    <p><a href="{{ url_for('vehicles.view', vid=job.vehicle_id) }}"><span class="plate">{{ job.plate or 'no plate' }}</span></a> {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}</p>
+    <p class="small">VIN {{ vehicle.vin or '—' }} · {{ vehicle.fuel or '' }} {{ (vehicle.power_kw ~ ' kW') if vehicle.power_kw else '' }} · Oil {{ vehicle.oil_spec or '—' }}</p>
+    <p class="small">km in: <b>{{ job.mileage_in|km or '—' }}</b> · Fuel: {{ job.fuel_level or '—' }} · Next MFK: {{ vehicle.mfk_next|d or '—' }}</p>
+    {% if job.damages %}<p class="small">⚠ Damage at check-in: {{ job.damages }}</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Customer</h3>
+    <p><a href="{{ url_for('customers.view', cid=job.customer_id) }}"><b>{{ job.customer }}</b></a></p>
+    <p>{{ contact(customer) }}</p>{% if customer.email %}<p class="small"><a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>{% endif %}
+    {% if customer.discount_pct %}<p class="small">Standard discount {{ customer.discount_pct|qty }}% (applied to new lines)</p>{% endif %}
+    {% if customer.notes %}<p class="small muted">{{ customer.notes }}</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Money</h3>
+    <table class="totals">
+      <tr><td>Labour</td><td class="num">{{ totals.labour|chf }}</td></tr>
+      <tr><td>Parts</td><td class="num">{{ totals.parts|chf }}</td></tr>
+      {% if totals.other %}<tr><td>Other</td><td class="num">{{ totals.other|chf }}</td></tr>{% endif %}
+      <tr><td>Subtotal excl. VAT</td><td class="num">{{ totals.subtotal|chf }}</td></tr>
+      {% for b in totals.breakdown if b[0] %}<tr><td>VAT {{ b[0]|qty }}%</td><td class="num">{{ b[2]|chf }}</td></tr>{% endfor %}
+      {% if totals.rounding %}<tr><td>Rounding</td><td class="num">{{ totals.rounding|chf }}</td></tr>{% endif %}
+      <tr class="big"><td>Total</td><td class="num">{{ totals.total|chf }}</td></tr>
+    </table>
+    {% if session.role == 'admin' and totals.parts %}<p class="small muted">Parts cost {{ totals.parts_cost|chf }} · margin {{ (totals.parts - totals.parts_cost)|chf }}</p>{% endif %}
+  </div>
 </div>
 
-<h2>Work & parts</h2>
-<table>
-  <tr><th>Type</th><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Total</th><th></th></tr>
+{% if history %}<p class="small muted">Earlier visits: {% for h in history %}<a href="{{ url_for('jobs.view', jid=h.id) }}">#{{ h.id }} {{ h.opened_at|d }} ({{ h.complaint|truncate(30) }})</a>{{ ', ' if not loop.last }}{% endfor %}</p>{% endif %}
+
+<h2 id="items">Work & parts</h2>
+{% if is_locked %}<p class="flash">This job is invoiced, so it can't be changed. Cancel the invoice to make changes.</p>{% endif %}
+{% if not is_locked %}{% for i in items %}<form method="post" action="{{ url_for('jobs.item_edit', jid=job.id, iid=i.id) }}" id="f{{ i.id }}">{{ csrf_field() }}</form>{% endfor %}{% endif %}
+<div class="tablewrap"><table class="items">
+  <tr><th>Type</th><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Disc. %</th><th class="num">VAT %</th><th class="num">Net</th><th></th></tr>
   {% for i in items %}
-  <tr><td>{{ i.kind }}</td><td>{{ i.description }}</td><td class="num">{{ i.quantity }}</td><td class="num">{{ i.unit_price|money }}</td><td class="num">{{ (i.quantity * i.unit_price)|money }}</td>
-  <td>{% if job.status not in ('delivered','cancelled') %}<form method="post" action="{{ url_for('job_item_delete', jid=job.id, iid=i.id) }}" class="inline">{{ csrf_field() }}<button class="small danger" title="Remove (parts go back to stock)">✕</button></form>{% endif %}</td></tr>
-  {% else %}<tr><td colspan="6" class="muted">Nothing added yet.</td></tr>{% endfor %}
-</table>
+  <tr>
+    {% if not is_locked %}
+    <td>{{ i.kind }}{% if i.employee %}<div class="small muted">{{ i.employee }}</div>{% endif %}</td>
+    <td><input form="f{{ i.id }}" name="description" value="{{ i.description }}">{% if i.kind == 'part' and i.stock is not none %}<div class="small muted">{{ i.stock|qty }} left in stock</div>{% endif %}</td>
+    <td class="num"><input form="f{{ i.id }}" class="n" name="quantity" value="{{ i.quantity|qty }}" inputmode="decimal"> <span class="small">{{ i.unit }}</span></td>
+    <td class="num"><input form="f{{ i.id }}" class="n" name="unit_price" value="{{ i.unit_price|money_in }}" inputmode="decimal"></td>
+    <td class="num"><input form="f{{ i.id }}" class="n s" name="discount_pct" value="{{ i.discount_pct|qty }}" inputmode="decimal"></td>
+    <td class="num"><input form="f{{ i.id }}" class="n s" name="vat_rate" value="{{ i.vat_rate|qty }}" inputmode="decimal"></td>
+    <td class="num">{{ i.net|chf(false) }}</td>
+    <td class="nowrap"><button form="f{{ i.id }}" class="small light" title="Save changes">✔</button>
+      <form method="post" action="{{ url_for('jobs.item_delete', jid=job.id, iid=i.id) }}" class="inline">{{ csrf_field() }}<button class="small danger" title="Remove (parts go back to stock)">✕</button></form></td>
+    {% else %}
+    <td>{{ i.kind }}</td><td>{{ i.description }}</td><td class="num">{{ i.quantity|qty }} {{ i.unit }}</td><td class="num">{{ i.unit_price|chf(false) }}</td>
+    <td class="num">{{ i.discount_pct|qty if i.discount_pct else '' }}</td><td class="num">{{ i.vat_rate|qty }}</td><td class="num">{{ i.net|chf(false) }}</td><td></td>
+    {% endif %}
+  </tr>
+  {% else %}<tr><td colspan="8" class="muted">Nothing added yet. Use the boxes below.</td></tr>{% endfor %}
+</table></div>
 
-{% if job.status not in ('delivered','cancelled') %}
-<div class="grid2">
-<form method="post" action="{{ url_for('job_item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
-  <h3>+ Add labour / service</h3><input type="hidden" name="kind" value="labour">
-  <label>Description <input name="description" required placeholder="Oil change, brake repair…"></label>
-  <div class="row"><label>Qty <input name="quantity" type="number" min="1" value="1"></label>
-  <label>Price ({{ currency }}) <input name="unit_price" type="number" min="0" required></label></div>
+{% if not is_locked %}
+<div class="grid4" id="add">
+<form method="post" action="{{ url_for('jobs.item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
+  <h3>+ Standard service</h3><input type="hidden" name="kind" value="service">
+  <label>Service<select name="service_id" required>{% for s in services %}<option value="{{ s.id }}">{{ s.name }} — {{ (s.fixed_price|chf) if s.fixed_price is not none else (s.hours|qty ~ ' h') }}</option>{% endfor %}</select></label>
+  <label>Mechanic<select name="employee_id"><option value="">{{ job.employee or '—' }}</option>{% for e in employees %}<option value="{{ e.id }}">{{ e.full_name }}</option>{% endfor %}</select></label>
+  <button>Add</button> <a class="small" href="{{ url_for('admin.services') }}">edit list</a>
+</form>
+<form method="post" action="{{ url_for('jobs.item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
+  <h3>+ Labour (hours)</h3><input type="hidden" name="kind" value="labour">
+  <label>Description<input name="description" required placeholder="Replace timing belt…"></label>
+  <div class="row"><label>Hours<input name="quantity" value="1" inputmode="decimal"></label>
+  <label>Rate CHF/h<input name="unit_price" placeholder="{{ S.hourly_rate|int|money_in }}" inputmode="decimal"></label></div>
+  <label>Mechanic<select name="employee_id"><option value="">{{ job.employee or '—' }}</option>{% for e in employees %}<option value="{{ e.id }}">{{ e.full_name }}</option>{% endfor %}</select></label>
   <button>Add</button>
 </form>
-<form method="post" action="{{ url_for('job_item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
-  <h3>+ Add part from stock</h3><input type="hidden" name="kind" value="part">
-  <label>Part <select name="part_id" required><option value="">— choose —</option>
-    {% for p in parts %}<option value="{{ p.id }}">{{ p.name }} ({{ p.part_number }}) — {{ p.quantity }} in stock — {{ p.sell_price|money }}</option>{% endfor %}</select></label>
-  <div class="row"><label>Qty <input name="quantity" type="number" min="1" value="1"></label>
-  <label>Price (empty = normal price) <input name="unit_price" type="number" min="0"></label></div>
+<form method="post" action="{{ url_for('jobs.item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
+  <h3>+ Part from stock</h3><input type="hidden" name="kind" value="part">
+  <label>Part<select name="part_id"><option value="">— choose or scan below —</option>
+    {% for p in parts %}<option value="{{ p.id }}">{{ p.name }} ({{ p.part_number }}) · {{ p.quantity|qty }} {{ p.unit }} · {{ p.sell_price|chf }}</option>{% endfor %}</select></label>
+  <label>…or part number / barcode<input name="part_code" placeholder="scan or type"></label>
+  <div class="row"><label>Qty<input name="quantity" value="1" inputmode="decimal"></label>
+  <label>Price (empty = list)<input name="unit_price" inputmode="decimal"></label></div>
+  <button>Add</button>
+</form>
+<form method="post" action="{{ url_for('jobs.item_add', jid=job.id) }}" class="card">{{ csrf_field() }}
+  <h3>+ Other item</h3><input type="hidden" name="kind" value="other">
+  <label>Description<input name="description" required placeholder="External work, special order part, fee…"></label>
+  <div class="row"><label>Qty<input name="quantity" value="1" inputmode="decimal"></label>
+  <label>Price CHF<input name="unit_price" required inputmode="decimal"></label></div>
+  <label>Our cost CHF (optional)<input name="unit_cost" inputmode="decimal"></label>
   <button>Add</button>
 </form>
 </div>
 {% endif %}
+
+<div class="grid2">
+<form method="post" action="{{ url_for('jobs.update', jid=job.id) }}" class="card">{{ csrf_field() }}
+  <h2>Status & notes</h2>
+  <div class="cols2">
+    <label>Status<select name="status">{% for s in statuses %}<option value="{{ s }}" {{ 'selected' if s == job.status }}>{{ s.replace('_',' ') }}</option>{% endfor %}</select></label>
+    <label>Responsible mechanic<select name="employee_id"><option value="">— not assigned —</option>{% for e in employees %}<option value="{{ e.id }}" {{ 'selected' if e.id == job.employee_id }}>{{ e.full_name }}</option>{% endfor %}</select></label>
+    <label>Promised ready at<input type="datetime-local" name="promised_at" value="{{ job.promised_at or '' }}"></label>
+    <label>Quote valid until<input type="date" name="quote_valid_until" value="{{ job.quote_valid_until or '' }}"></label>
+  </div>
+  {{ check('Customer is waiting', 'customer_waiting', job) }}
+  <label>Customer request<textarea name="complaint" rows="2">{{ job.complaint }}</textarea></label>
+  <label>Work done / findings <span class="muted">(printed on invoice)</span><textarea name="diagnosis" rows="3">{{ job.diagnosis or '' }}</textarea></label>
+  <label>Recommendations for later <span class="muted">(printed)</span><textarea name="recommendations" rows="2" placeholder="Brake discs at 30%, replace in ~10'000 km">{{ job.recommendations or '' }}</textarea></label>
+  <label>Damage at check-in<textarea name="damages" rows="2">{{ job.damages or '' }}</textarea></label>
+  <label>Internal notes <span class="muted">(never printed)</span><textarea name="internal_notes" rows="2">{{ job.internal_notes or '' }}</textarea></label>
+  <button>Save</button>
+  <p class="small muted">Opened {{ job.opened_at|d }}{% if job.finished_at %} · finished {{ job.finished_at|d }}{% endif %}{% if job.closed_at %} · closed {{ job.closed_at|d }}{% endif %}</p>
+</form>
+
+<div>
+<div class="card" id="time">
+  <h2>⏱ Time worked</h2>
+  <p class="small">Worked: <b>{{ worked|qty }} h</b> · Billed: <b>{{ billed|qty }} h</b>
+  {% if worked and billed %} · efficiency {{ (billed / worked * 100)|round|int }}%{% endif %}</p>
+  <table>{% for t in times %}<tr><td>{{ t.work_date|d }}</td><td>{{ t.employee }}</td><td class="num">{{ t.hours|qty }} h</td><td class="small">{{ t.note or '' }}</td>
+  <td><form method="post" action="{{ url_for('jobs.time_delete', jid=job.id, tid=t.id) }}" class="inline">{{ csrf_field() }}<button class="link">✕</button></form></td></tr>{% endfor %}</table>
+  <form method="post" action="{{ url_for('jobs.time_add', jid=job.id) }}" class="row">{{ csrf_field() }}
+    <select name="employee_id" required>{% for e in employees %}<option value="{{ e.id }}" {{ 'selected' if e.id == job.employee_id }}>{{ e.full_name }}</option>{% endfor %}</select>
+    <input type="date" name="work_date" value="{{ today }}">
+    <input name="hours" placeholder="hours e.g. 1.5" inputmode="decimal" required>
+    <input name="note" placeholder="note">
+    <button>Add</button>
+  </form>
+  {% if not employees %}<p class="small muted">Add your mechanics under Staff first.</p>{% endif %}
+</div>
+{% if invoices %}<div class="card"><h3>Invoices</h3>{% for i in invoices %}<p><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a> {{ i.total|chf }} {{ status_badge(i.status) }}</p>{% endfor %}</div>{% endif %}
+{{ files_block('job', job.id, files) }}
+</div>
+</div>
 {% endblock %}

@@ -1,0 +1,17 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Quote {{ job.id }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="paper">
+{% from "_macros.html" import print_header with context %}
+{{ print_header('QUOTE', 'No. Q-' ~ job.id, today|d) }}
+<div class="address-window">{% for l in address %}{{ l }}<br>{% endfor %}</div>
+<p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}</p>
+<p><b>Your request:</b> {{ job.complaint }}</p>
+{% if job.diagnosis %}<p>{{ job.diagnosis }}</p>{% endif %}
+{% with subtotal=totals.subtotal, breakdown=totals.breakdown, rounding=totals.rounding, total=totals.total %}{% include "_print_items.html" %}{% endwith %}
+{% if job.recommendations %}<p><b>Recommendations:</b> {{ job.recommendations }}</p>{% endif %}
+<p>This quote is valid until {{ (job.quote_valid_until or today)|d }}. Prices in CHF. Additional work only after your approval.</p>
+<div class="sign"><div>Date / signature customer (approval)</div></div>
+<p class="footer">{{ S.invoice_footer }}</p>
+<p class="no-print center"><button onclick="window.print()">🖨 Print</button></p>
+</body></html>

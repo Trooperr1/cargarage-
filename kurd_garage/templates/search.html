@@ -1,10 +1,18 @@
-{% extends "base.html" %}
+{% extends "base.html" %}{% from "_macros.html" import job_table, status_badge with context %}
 {% block content %}
 <h1>Search: “{{ term }}”</h1>
+{% if not term %}<p class="muted">Type a name, phone, plate, VIN, master number, invoice number or part number in the search box.</p>{% endif %}
+{% if res.jobs %}<h2>Job</h2>{{ job_table(res.jobs) }}{% endif %}
+{% if term %}
 <h2>Customers</h2>
-<table>{% for c in customers %}<tr><td><a href="{{ url_for('customer_view', cid=c.id) }}">{{ c.name }}</a></td><td>{{ c.phone }}</td></tr>
-{% else %}<tr><td class="muted">None found.</td></tr>{% endfor %}</table>
-<h2>Cars</h2>
-<table>{% for v in vehicles %}<tr><td><a href="{{ url_for('vehicle_view', vid=v.id) }}">{{ v.plate }}</a></td><td>{{ v.make }} {{ v.model }} {{ v.year or '' }}</td><td>{{ v.owner }}</td></tr>
-{% else %}<tr><td class="muted">None found.</td></tr>{% endfor %}</table>
+<div class="tablewrap"><table>{% for c in res.customers %}<tr><td><a href="{{ url_for('customers.view', cid=c.id) }}">{{ c.display_name }}</a></td><td>{{ c.mobile or c.phone or '' }}</td><td>{{ c.email or '' }}</td><td>{{ c.postcode or '' }} {{ c.city or '' }}</td></tr>
+{% else %}<tr><td class="muted">None found.</td></tr>{% endfor %}</table></div>
+<h2>Vehicles</h2>
+<div class="tablewrap"><table>{% for v in res.vehicles %}<tr><td><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or '—' }}</a></td><td>{{ v.make }} {{ v.model }} {{ v.year or '' }}</td><td>{{ v.vin or '' }}</td><td>{{ v.owner }}</td></tr>
+{% else %}<tr><td class="muted">None found.</td></tr>{% endfor %}</table></div>
+{% if res.invoices %}<h2>Invoices</h2>
+<div class="tablewrap"><table>{% for i in res.invoices %}<tr><td><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a></td><td>{{ i.customer }}</td><td class="num">{{ i.total|chf }}</td><td>{{ status_badge(i.status) }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% if res.parts %}<h2>Parts</h2>
+<div class="tablewrap"><table>{% for p in res.parts %}<tr><td><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a></td><td>{{ p.part_number }}</td><td class="num">{{ p.quantity|qty }} {{ p.unit }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% endif %}
 {% endblock %}

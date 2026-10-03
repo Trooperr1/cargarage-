@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Activity log <span class="muted small">last 500</span></h1>
+<div class="tablewrap"><table><tr><th>When</th><th>User</th><th>Action</th><th>What</th><th>Details</th></tr>
+{% set pages = {'job': 'jobs.view', 'customer': 'customers.view', 'vehicle': 'vehicles.view', 'invoice': 'invoices.view', 'part': 'parts.view'} %}
+{% set args = {'job': 'jid', 'customer': 'cid', 'vehicle': 'vid', 'invoice': 'iid', 'part': 'pid'} %}
+{% for a in rows %}<tr><td class="nowrap">{{ a.created_at|d }}</td><td>{{ a.username or '' }}</td><td>{{ a.action }}</td>
+<td>{% if a.entity in pages and a.entity_id and a.action != 'delete' %}<a href="{{ url_for(pages[a.entity], **{args[a.entity]: a.entity_id}) }}">{{ a.entity }} #{{ a.entity_id }}</a>{% else %}{{ a.entity }} {{ ('#' ~ a.entity_id) if a.entity_id }}{% endif %}</td><td>{{ a.details or '' }}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

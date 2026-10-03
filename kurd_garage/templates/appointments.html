@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% from "_macros.html" import status_badge with context %}
+{% block content %}
+<div class="titlebar"><h1>Calendar <span class="muted small">week of {{ days[0].isoformat()|d }}</span></h1>
+<div><a class="btn light" href="{{ url_for('appointments.index', week=prev) }}">◀</a>
+<a class="btn light" href="{{ url_for('appointments.index', week=this_week) }}">This week</a>
+<a class="btn light" href="{{ url_for('appointments.index', week=next) }}">▶</a>
+<a class="btn" href="{{ url_for('appointments.edit') }}">+ Appointment</a></div></div>
+<div class="week">
+{% for d in days %}{% set key = d.isoformat() %}
+<div class="day {{ 'today' if key == today }}">
+  <div class="day-head"><b>{{ ['Mon','Tue','Wed','Thu','Fri','Sat'][loop.index0] }}</b> {{ d.strftime('%d.%m.') }}
+  <a class="small" href="{{ url_for('appointments.edit', day=key) }}">+ add</a></div>
+  {% for a in by_day[key] %}
+  <a class="appt s-{{ a.status }}" href="{{ url_for('appointments.edit', aid=a.id) }}">
+    <b>{{ a.starts_at[11:16] }}</b> <span class="small">({{ a.minutes }} min)</span><br>
+    {{ a.title }}<br><span class="small">{{ a.customer or a.contact_name or '' }} {{ a.plate or '' }}</span>
+    {% if a.employee %}<br><span class="small">👤 {{ a.employee }}</span>{% endif %}
+    {% if a.courtesy_car %}<br><span class="small">🚗 courtesy car</span>{% endif %}
+    {% if a.status != 'booked' %}<br>{{ status_badge(a.status) }}{% endif %}
+  </a>
+  {% else %}<p class="muted small">free</p>{% endfor %}
+</div>
+{% endfor %}
+</div>
+{% endblock %}

@@ -1,21 +1,44 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Reports</h1>
-<form class="toolbar">From <input type="date" name="start" value="{{ start }}"> to <input type="date" name="end" value="{{ end }}"><button>Show</button></form>
+<div class="titlebar"><h1>Reports <span class="muted small">{{ start|d }} – {{ end|d }}</span></h1>
+<div><a class="btn light" href="{{ url_for('reports.vat', start=start, end=end) }}">VAT / MWST</a> <a class="btn light" href="{{ url_for('reports.receivables') }}">Receivables</a>
+<a class="btn light" href="{{ url_for('reports.stock') }}">Stock</a> <a class="btn light" href="{{ url_for('reports.payments_csv', start=start, end=end) }}">Payments CSV</a></div></div>
+{% include "_period.html" %}
 <div class="stats">
-  <div class="stat"><b>{{ total_income|money }}</b><span>Money received</span></div>
-  <div class="stat"><b>{{ parts_cost|money }}</b><span>Cost of parts used</span></div>
+  <div class="stat"><b>{{ revenue.net|chf }}</b><span>Revenue excl. VAT ({{ revenue.n }} invoices)</span></div>
+  <div class="stat"><b>{{ received|chf }}</b><span>Money received</span></div>
+  <div class="stat"><b>{{ (split.labour.net if split.labour else 0)|chf }}</b><span>Labour</span></div>
+  <div class="stat"><b>{{ (split.part.net if split.part else 0)|chf }}</b><span>Parts sold (cost {{ parts_cost|chf }})</span></div>
+  <div class="stat"><b>{{ exp_net|chf }}</b><span>Expenses excl. VAT</span></div>
+  <div class="stat {{ 'good' if profit > 0 else 'warn' }}"><b>{{ profit|chf }}</b><span>Profit estimate*</span></div>
+  <div class="stat"><b>{{ jobs_count }}</b><span>Jobs</span></div>
+  <div class="stat"><b>{{ new_customers }}</b><span>New customers</span></div>
 </div>
-<h2>Income per day</h2>
-<table><tr><th>Day</th><th>Method</th><th class="num">Payments</th><th class="num">Amount</th></tr>
-{% for r in income %}<tr><td>{{ r.day }}</td><td>{{ r.method }}</td><td class="num">{{ r.n }}</td><td class="num">{{ r.total|money }}</td></tr>
-{% else %}<tr><td colspan="4" class="muted">No payments in this period.</td></tr>{% endfor %}</table>
-<h2>Work per mechanic</h2>
-<table><tr><th>Mechanic</th><th class="num">Jobs</th><th class="num">Labour</th><th class="num">Total billed</th></tr>
-{% for r in by_mechanic %}<tr><td>{{ r.name }}</td><td class="num">{{ r.jobs }}</td><td class="num">{{ r.labour|money }}</td><td class="num">{{ r.total|money }}</td></tr>
-{% else %}<tr><td colspan="4" class="muted">No jobs.</td></tr>{% endfor %}</table>
-<h2>Most used parts</h2>
-<table><tr><th>Part</th><th class="num">Qty</th><th class="num">Sold for</th></tr>
-{% for r in top_parts %}<tr><td>{{ r.description }}</td><td class="num">{{ r.qty }}</td><td class="num">{{ r.total|money }}</td></tr>
-{% else %}<tr><td colspan="3" class="muted">No parts used.</td></tr>{% endfor %}</table>
+<p class="small muted">* Revenue − cost of parts used − expenses (without "parts purchase", which is already counted as cost of parts used). An estimate, not a bookkeeping result.</p>
+<div class="grid2">
+<div><h2>Per month</h2>
+<div class="tablewrap"><table><tr><th>Month</th><th class="num">Invoices</th><th class="num">Net</th><th class="num">VAT</th><th class="num">Gross</th></tr>
+{% for m in months %}<tr><td>{{ m.month }}</td><td class="num">{{ m.n }}</td><td class="num">{{ m.net|chf(false) }}</td><td class="num">{{ m.vat|chf(false) }}</td><td class="num">{{ m.gross|chf(false) }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">No invoices.</td></tr>{% endfor %}</table></div></div>
+<div><h2>Payments by method</h2>
+<div class="tablewrap"><table>{% for m in by_method %}<tr><td>{{ m.method }}</td><td class="num">{{ m.n }}</td><td class="num">{{ m.total|chf }}</td></tr>{% else %}<tr><td class="muted">No payments.</td></tr>{% endfor %}</table></div>
+<h2>Expenses</h2>
+<div class="tablewrap"><table>{% for e in expenses %}<tr><td>{{ e.category }}</td><td class="num">{{ e.gross|chf }}</td></tr>{% else %}<tr><td class="muted">No expenses.</td></tr>{% endfor %}</table></div></div>
+</div>
+<div class="grid2">
+<div><h2>Mechanics</h2>
+<div class="tablewrap"><table><tr><th>Name</th><th class="num">Worked h</th><th class="num">Billed h</th><th class="num">Labour</th></tr>
+{% for e in employees %}<tr><td>{{ e.name }}</td><td class="num">{{ (worked[e.name] or 0)|qty }}</td><td class="num">{{ e.hours_billed|qty }}</td><td class="num">{{ e.labour|chf(false) }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No labour invoiced.</td></tr>{% endfor %}</table></div></div>
+<div><h2>Best customers</h2>
+<div class="tablewrap"><table>{% for c in customers %}<tr><td><a href="{{ url_for('customers.view', cid=c.id) }}">{{ c.display_name }}</a></td><td class="num">{{ c.n }}</td><td class="num">{{ c.net|chf(false) }}</td></tr>{% else %}<tr><td class="muted">—</td></tr>{% endfor %}</table></div></div>
+</div>
+<div class="grid2">
+<div><h2>Top services</h2>
+<div class="tablewrap"><table>{% for s in services %}<tr><td>{{ s.description }}</td><td class="num">{{ s.n }}×</td><td class="num">{{ s.net|chf(false) }}</td></tr>{% else %}<tr><td class="muted">—</td></tr>{% endfor %}</table></div></div>
+<div><h2>Top parts</h2>
+<div class="tablewrap"><table><tr><th>Part</th><th class="num">Qty</th><th class="num">Sold</th><th class="num">Margin</th></tr>{% for p in parts %}<tr><td>{{ p.description }}</td><td class="num">{{ p.qty|qty }}</td><td class="num">{{ p.net|chf(false) }}</td><td class="num">{{ (p.net - p.cost)|int|chf(false) }}</td></tr>{% else %}<tr><td colspan="4" class="muted">—</td></tr>{% endfor %}</table></div>
+<h2>Makes in the workshop</h2>
+<div class="tablewrap"><table>{% for m in makes %}<tr><td>{{ m.make }}</td><td class="num">{{ m.jobs }}</td></tr>{% else %}<tr><td class="muted">—</td></tr>{% endfor %}</table></div></div>
+</div>
 {% endblock %}

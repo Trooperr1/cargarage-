@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge with context %}
+{% block content %}
+<div class="titlebar"><h1>Invoice {{ inv.number }}
+{% if inv.status == 'cancelled' %}{{ status_badge('cancelled') }}{% elif inv.open_amount <= 0 %}{{ status_badge('paid') }}{% elif inv.effective_due < today %}{{ status_badge('overdue') }}{% else %}{{ status_badge('open') }}{% endif %}</h1>
+<div><a class="btn" href="{{ url_for('invoices.printout', iid=inv.id) }}" target="_blank">🖨 Print / PDF with QR-bill</a>
+<a class="btn light" href="{{ url_for('jobs.view', jid=inv.job_id) }}">Job #{{ inv.job_id }}</a></div></div>
+{% if inv.status == 'cancelled' %}<p class="flash error">Cancelled {{ inv.cancelled_at|d }}: {{ inv.cancel_reason }}</p>{% endif %}
+<div class="grid3">
+  <div class="card"><h3>Bill to</h3><p>{{ inv.bill_to|replace('\n', '<br>'|safe) }}</p>
+  <p><a href="{{ url_for('customers.view', cid=inv.customer_id) }}">open customer</a></p></div>
+  <div class="card"><h3>Amounts</h3>
+    <table class="totals">
+      <tr><td>Net</td><td class="num">{{ inv.subtotal|chf }}</td></tr>
+      {% for b in breakdown if b[0] %}<tr><td>VAT {{ b[0]|qty }}%</td><td class="num">{{ b[2]|chf }}</td></tr>{% endfor %}
+      {% if inv.rounding %}<tr><td>Rounding</td><td class="num">{{ inv.rounding|chf }}</td></tr>{% endif %}
+      <tr class="big"><td>Total</td><td class="num">{{ inv.total|chf }}</td></tr>
+      {% if inv.fees %}<tr><td>Reminder fees</td><td class="num">{{ inv.fees|chf }}</td></tr>{% endif %}
+      <tr><td>Paid</td><td class="num">{{ inv.paid|chf }}</td></tr>
+      <tr class="big"><td>Open</td><td class="num {{ 'owed' if inv.open_amount > 0 }}">{{ inv.open_amount|chf }}</td></tr>
+    </table></div>
+  <div class="card"><h3>Dates</h3><p>Issued {{ inv.issue_date|d }}<br>Due {{ inv.due_date|d }}{% if inv.effective_due != inv.due_date %}<br>New due date {{ inv.effective_due|d }}{% endif %}</p>
+  {% if inv.notes %}<p class="small">{{ inv.notes }}</p>{% endif %}</div>
+</div>
+
+{% if inv.status == 'issued' and inv.open_amount > 0 %}
+<div class="grid2">
+<form method="post" action="{{ url_for('invoices.pay', iid=inv.id) }}" class="card">{{ csrf_field() }}
+  <h2>💶 Record payment</h2>
+  <div class="cols2">
+    <label>Amount CHF<input name="amount" value="{{ inv.open_amount|money_in }}" inputmode="decimal" required></label>
+    <label>Method<select name="method">{% for m in payment_methods %}<option>{{ m }}</option>{% endfor %}</select></label>
+    <label>Date<input type="date" name="paid_on" value="{{ today }}"></label>
+    <label>Note<input name="note"></label>
+  </div>
+  <label class="check"><input type="checkbox" name="deliver" value="1" checked> Mark vehicle as delivered when fully paid</label>
+  <button>Save payment</button>
+</form>
+<form method="post" action="{{ url_for('invoices.remind', iid=inv.id) }}" class="card">{{ csrf_field() }}
+  <h2>📨 Payment reminder</h2>
+  {% if next_level <= 3 %}
+  <p>Next: <b>reminder {{ next_level }}</b>{% if next_level == 1 %} (friendly, no fee){% endif %}. New payment deadline: {{ S.reminder_days }} days.</p>
+  <label>Reminder fee CHF<input name="fee" value="{{ next_fee|money_in }}" inputmode="decimal"></label>
+  <button>Create & print reminder {{ next_level }}</button>
+  {% else %}<p>3 reminders sent. Next step: debt collection (Betreibung) at the debt enforcement office.</p>{% endif %}
+  {% for d in dunning %}<p class="small">Reminder {{ d.level }} on {{ d.sent_on|d }} {{ ('fee ' ~ d.fee|chf) if d.fee }} — <a href="{{ url_for('invoices.printout', iid=inv.id, reminder=d.level) }}" target="_blank">print again</a></p>{% endfor %}
+</form>
+</div>
+{% endif %}
+
+<h2>Payments</h2>
+<div class="tablewrap"><table><tr><th>Date</th><th class="num">Amount</th><th>Method</th><th>Note</th><th>Taken by</th><th></th></tr>
+{% for p in payments %}<tr><td>{{ p.paid_on|d }}</td><td class="num">{{ p.amount|chf }}</td><td>{{ p.method }}</td><td>{{ p.note or '' }}</td><td>{{ p.taken_by or '' }}</td>
+<td>{% if session.role == 'admin' %}<form method="post" action="{{ url_for('invoices.payment_delete', iid=inv.id, pid=p.id) }}" class="inline" onsubmit="return confirm('Remove this payment?')">{{ csrf_field() }}<button class="link">✕</button></form>{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">No payments yet.</td></tr>{% endfor %}</table></div>
+
+{% if inv.status == 'issued' and not payments %}
+<details class="card"><summary>Cancel this invoice…</summary>
+<form method="post" action="{{ url_for('invoices.cancel', iid=inv.id) }}" class="row">{{ csrf_field() }}
+  <input name="reason" placeholder="Reason (e.g. wrong price, wrong customer)" required>
+  <button class="danger" onclick="return confirm('Cancel invoice {{ inv.number }}? The number stays used.')">Cancel invoice</button>
+</form></details>
+{% endif %}
+{% endblock %}

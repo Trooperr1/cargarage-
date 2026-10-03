@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>Create invoice — job #{{ job.id }}</h1>
+<div class="grid2">
+<form method="post" class="card">{{ csrf_field() }}
+  <p><b>{{ customer.display_name }}</b> · {{ job.plate or '' }} {{ job.make }} {{ job.model }}</p>
+  <div class="cols2">
+    <label>Invoice date<input type="date" name="issue_date" value="{{ today }}"></label>
+    <label>Due date<input type="date" name="due_date" value="{{ due }}"></label>
+  </div>
+  <label>Note on invoice (optional)<textarea name="notes" rows="2"></textarea></label>
+  <h3>Paid right away? <span class="muted small">(optional)</span></h3>
+  <div class="cols2">
+    <label>Amount paid now (CHF)<input name="paid_now" inputmode="decimal" placeholder="{{ totals.total|money_in }}"></label>
+    <label>Method<select name="method">{% for m in payment_methods %}<option>{{ m }}</option>{% endfor %}</select></label>
+  </div>
+  <p class="small muted">After this the job can no longer be changed (Swiss law: invoices must not be altered). If you made a mistake, cancel the invoice and create a new one.</p>
+  <button>Create invoice {{ totals.total|chf }}</button>
+</form>
+<div class="card">
+  <table class="totals">
+    <tr><td>Labour</td><td class="num">{{ totals.labour|chf }}</td></tr>
+    <tr><td>Parts</td><td class="num">{{ totals.parts|chf }}</td></tr>
+    {% if totals.other %}<tr><td>Other</td><td class="num">{{ totals.other|chf }}</td></tr>{% endif %}
+    <tr><td>Subtotal</td><td class="num">{{ totals.subtotal|chf }}</td></tr>
+    {% for b in totals.breakdown if b[0] %}<tr><td>VAT {{ b[0]|qty }}%</td><td class="num">{{ b[2]|chf }}</td></tr>{% endfor %}
+    {% if totals.rounding %}<tr><td>Rounding</td><td class="num">{{ totals.rounding|chf }}</td></tr>{% endif %}
+    <tr class="big"><td>Total</td><td class="num">{{ totals.total|chf }}</td></tr>
+  </table>
+</div>
+</div>
+{% endblock %}

@@ -1,17 +1,25 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, money, select, textarea, check with context %}
 {% block content %}
-<h1>{{ 'Edit part' if row else 'New part' }}</h1>
-<form method="post" class="card narrow">{{ csrf_field() }}
-  {% set p = row or {} %}
-  <label>Part number * <input name="part_number" required value="{{ p.part_number or '' }}"></label>
-  <label>Name * <input name="name" required value="{{ p.name or '' }}"></label>
-  <label>Supplier <select name="supplier_id"><option value="">—</option>
-    {% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if s.id == p.supplier_id }}>{{ s.name }}</option>{% endfor %}</select></label>
-  <div class="row"><label>Cost price <input name="cost_price" type="number" min="0" value="{{ p.cost_price or 0 }}"></label>
-  <label>Sell price <input name="sell_price" type="number" min="0" value="{{ p.sell_price or 0 }}"></label></div>
-  <div class="row">{% if not row %}<label>Starting stock <input name="quantity" type="number" min="0" value="0"></label>{% endif %}
-  <label>Warn when stock ≤ <input name="reorder_level" type="number" min="0" value="{{ p.reorder_level or 0 }}"></label></div>
-  <label>Shelf / location <input name="location" value="{{ p.location or '' }}"></label>
+<h1>{{ 'Edit part' if pid else 'New part' }}</h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols4">
+    {{ input('Part number', 'part_number', row, required=true) }}
+    {{ input('Barcode / EAN', 'ean', row) }}
+    {{ input('Name', 'name', row, required=true, cls='span2') }}
+    {{ input('Brand', 'brand', row, extra='placeholder="Bosch, Mann, Castrol…"') }}
+    {{ input('Category', 'category', row, extra='list="cats" placeholder="Filters, Brakes, Oil…"') }}
+    {{ select('Unit', 'unit', units, row, blank=false) }}
+    {{ input('Shelf / place', 'location', row) }}
+    <label>Supplier<select name="supplier_id"><option value="">—</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if row and row.supplier_id|string == s.id|string }}>{{ s.name }}</option>{% endfor %}</select></label>
+    {{ input("Supplier's article no.", 'supplier_ref', row) }}
+    {{ money('Cost price (excl. VAT)', 'cost_price', row) }}
+    {{ money('Sell price (excl. VAT)', 'sell_price', row) }}
+    {% if not pid %}{{ input('Starting stock', 'quantity', row, extra='inputmode="decimal"', value=(row.quantity if row and row.quantity else '0')) }}{% endif %}
+    {{ input('Warn when stock is at or below', 'reorder_level', row, extra='inputmode="decimal"') }}
+  </div>
+  {% if pid %}{{ check('Active (untick for parts you no longer use)', 'active', row) }}{% endif %}
+  {{ textarea('Notes', 'notes', row, rows=2) }}
   <button>Save</button>
 </form>
+<datalist id="cats">{% for c in categories + ['Oil & fluids','Filters','Brakes','Ignition','Battery','Lights','Wipers','Suspension','Exhaust','Belts','Cooling','Tyres','Electrical','Body','Other'] %}<option value="{{ c }}">{% endfor %}</datalist>
 {% endblock %}

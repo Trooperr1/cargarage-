@@ -1,16 +1,57 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, select, textarea, check, v with context %}
 {% block content %}
-<h1>{{ 'Edit car' if row else 'New car' }} — {{ owner.name }}</h1>
-<form method="post" class="card narrow">{{ csrf_field() }}
-  {% set v = row or {} %}
-  <label>Plate number * <input name="plate" required value="{{ v.plate or '' }}"></label>
-  <label>Make * (Toyota, Kia…) <input name="make" required value="{{ v.make or '' }}"></label>
-  <label>Model * <input name="model" required value="{{ v.model or '' }}"></label>
-  <label>Year <input name="year" type="number" min="1950" max="2100" value="{{ v.year or '' }}"></label>
-  <label>Color <input name="color" value="{{ v.color or '' }}"></label>
-  <label>VIN / chassis number <input name="vin" value="{{ v.vin or '' }}"></label>
-  <label>Mileage (km) <input name="mileage" type="number" min="0" value="{{ v.mileage if v.mileage is not none else '' }}"></label>
-  <label>Notes <textarea name="notes">{{ v.notes or '' }}</textarea></label>
+<h1>{{ 'Edit vehicle' if vid else 'New vehicle' }} <span class="muted small">— {{ owner.display_name }}</span></h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <p class="muted small">Tip: most data is on the vehicle registration (Fahrzeugausweis / permis de circulation).</p>
+  <h3>Identification</h3>
+  <div class="cols4">
+    {{ input('Plate number (e.g. ZH 123456)', 'plate', row) }}
+    {{ input('VIN / chassis no. (field 23)', 'vin', row, extra='maxlength="20"') }}
+    {{ input('Master number / Stammnummer (18)', 'master_number', row, extra='placeholder="123.456.789"') }}
+    {{ input('Type approval (24)', 'type_approval', row) }}
+  </div>
+  <h3>Vehicle</h3>
+  <div class="cols4">
+    {{ input('Make', 'make', row, required=true, extra='list="makes"') }}
+    {{ input('Model', 'model', row, required=true) }}
+    {{ input('Variant / version', 'variant', row, extra='placeholder="2.0 TDI Highline"') }}
+    {{ select('Body', 'body_type', ['Saloon','Estate','Hatchback','SUV','Coupé','Convertible','Van','MPV','Pick-up','Motorcycle','Other'], row) }}
+    {{ input('First registration (36)', 'first_registration', row, type='date') }}
+    {{ input('Year', 'year', row, type='number', extra='min="1900" max="2100"') }}
+    {{ select('Fuel', 'fuel', fuels, row) }}
+    {{ select('Gearbox', 'transmission', ['manual','automatic'], row) }}
+    {{ select('Drive', 'drive', [('FWD','Front'),('RWD','Rear'),('AWD','4x4 / AWD')], row) }}
+    {{ input('Engine code', 'engine_code', row) }}
+    {{ input('Engine ccm (37)', 'engine_ccm', row, type='number', extra='min="0"') }}
+    {{ input('Power kW (76)', 'power_kw', row, type='number', extra='min="0"') }}
+    {{ input('Colour', 'color', row) }}
+    {{ input('Mileage (km)', 'mileage', row, type='number', extra='min="0"') }}
+    {{ input('Oil specification', 'oil_spec', row, extra='placeholder="5W-30 VW 504.00"') }}
+  </div>
+  <h3>Dates</h3>
+  <div class="cols4">
+    {{ input('Last MFK', 'mfk_last', row, type='date') }}
+    {{ input('Next MFK due', 'mfk_next', row, type='date') }}
+    {{ input('Next service date', 'service_next_date', row, type='date') }}
+    {{ input('Next service at km', 'service_next_km', row, type='number', extra='min="0"') }}
+  </div>
+  <h3>Other</h3>
+  <div class="cols4">
+    {{ input('Tyre size summer', 'tyre_size_summer', row, extra='placeholder="205/55 R16 91V"') }}
+    {{ input('Tyre size winter', 'tyre_size_winter', row) }}
+    {{ input('Key number', 'key_number', row) }}
+    {{ input('Radio code', 'radio_code', row) }}
+  </div>
+  {% if vid %}
+  <div class="cols3">
+    <label>Owner (change when sold)
+      <select name="customer_id">{% for c in customers %}<option value="{{ c.id }}" {{ 'selected' if c.id == owner.id }}>{{ c.display_name }}</option>{% endfor %}</select>
+    </label>
+  </div>
+  <input type="hidden" name="active_shown" value="1">{{ check('Active (untick when sold / scrapped)', 'active', row) }}
+  {% endif %}
+  {{ textarea('Notes', 'notes', row) }}
   <button>Save</button>
 </form>
+<datalist id="makes">{% for m in ['Alfa Romeo','Audi','BMW','BYD','Citroën','Cupra','Dacia','DS','Fiat','Ford','Honda','Hyundai','Jaguar','Jeep','Kia','Land Rover','Lexus','Mazda','Mercedes-Benz','MG','Mini','Mitsubishi','Nissan','Opel','Peugeot','Polestar','Porsche','Renault','Seat','Škoda','Smart','Subaru','Suzuki','Tesla','Toyota','Volkswagen','Volvo'] %}<option value="{{ m }}">{% endfor %}</datalist>
 {% endblock %}

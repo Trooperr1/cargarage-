@@ -1,0 +1,12 @@
+<table class="print-items">
+  <tr><th>Description</th><th class="num">Qty</th><th class="num">Price</th><th class="num">Disc.</th><th class="num">Amount</th></tr>
+  {% for i in items %}<tr><td>{{ i.description }}</td><td class="num">{{ i.quantity|qty }} {{ i.unit }}</td><td class="num">{{ i.unit_price|chf(false) }}</td>
+  <td class="num">{{ (i.discount_pct|qty ~ '%') if i.discount_pct else '' }}</td><td class="num">{{ i.net|chf(false) }}</td></tr>{% endfor %}
+</table>
+<table class="totals right-box">
+  <tr><td>Subtotal excl. VAT</td><td class="num">{{ subtotal|chf }}</td></tr>
+  {% for b in breakdown %}{% if b[0] %}<tr><td>VAT {{ b[0]|qty }}% on {{ b[1]|chf(false) }}</td><td class="num">{{ b[2]|chf }}</td></tr>{% endif %}{% endfor %}
+  {% if rounding %}<tr><td>Rounding</td><td class="num">{{ rounding|chf }}</td></tr>{% endif %}
+  <tr class="big"><td>Total</td><td class="num">{{ total|chf }}</td></tr>
+</table>
+{% if S.vat_registered == '1' and S.uid %}<p class="small">VAT no. {{ S.uid }}</p>{% elif S.vat_registered != '1' %}<p class="small">Not subject to VAT.</p>{% endif %}

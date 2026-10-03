@@ -1,24 +1,32 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
 {% block content %}
-<h1>{{ row.name }} <span class="muted">{{ row.part_number }}</span></h1>
-<div class="grid2">
+<div class="titlebar"><h1>{{ row.name }} <span class="muted">{{ row.part_number }}</span>{% if not row.active %} <span class="badge">inactive</span>{% endif %}</h1>
+<a class="btn light" href="{{ url_for('parts.edit', pid=row.id) }}">Edit</a></div>
+<div class="grid3">
 <div class="card">
-  <p>In stock: <b class="{{ 'owed' if row.quantity <= row.reorder_level }}">{{ row.quantity }}</b> (warn at {{ row.reorder_level }})</p>
-  <p>Cost {{ row.cost_price|money }} · Sell {{ row.sell_price|money }}</p>
-  <p>Supplier: {{ row.supplier or '-' }} · Location: {{ row.location or '-' }}</p>
-  <a class="btn light" href="{{ url_for('part_form', pid=row.id) }}">Edit</a>
+  <p>In stock: <b class="big-number {{ 'owed' if row.quantity <= row.reorder_level }}">{{ row.quantity|qty }} {{ row.unit }}</b></p>
+  <p>Warn at {{ row.reorder_level|qty }} · Used last 12 months: {{ used_12m|qty }}</p>
+  <p>Cost {{ row.cost_price|chf }} · Sell {{ row.sell_price|chf }}{% if row.sell_price %} · margin {{ ((row.sell_price - row.cost_price) / row.sell_price * 100)|round|int }}%{% endif %}</p>
+  <p>Value in stock: {{ (row.quantity * row.cost_price)|round|int|chf }}</p>
+  <p class="small">Brand {{ row.brand or '—' }} · {{ row.category or '' }} · EAN {{ row.ean or '—' }}<br>Supplier {{ row.supplier or '—' }} {{ row.supplier_ref or '' }} · Place {{ row.location or '—' }}</p>
+  {% if row.notes %}<p class="muted">{{ row.notes }}</p>{% endif %}
 </div>
-<form method="post" action="{{ url_for('part_stock', pid=row.id) }}" class="card">{{ csrf_field() }}
-  <h2>Add / adjust stock</h2>
-  <label>Quantity (use minus to remove) <input name="change" type="number" required></label>
-  <label>Reason <select name="reason"><option value="purchase">purchase (bought new stock)</option><option value="adjustment">adjustment (count correction, damaged…)</option></select></label>
-  <label>Note <input name="note"></label>
+<form method="post" action="{{ url_for('parts.stock', pid=row.id) }}" class="card">{{ csrf_field() }}
+  <h3>📥 Delivery / stock change</h3>
+  <label>What happened?<select name="reason">
+    <option value="purchase">Delivery received (add)</option>
+    <option value="adjustment">Correction (+ add / − remove, e.g. damaged)</option>
+    <option value="count">Stock count (enter the counted total)</option></select></label>
+  <div class="row"><label>Quantity<input name="change" inputmode="decimal" required></label>
+  <label>Cost per unit CHF<input name="unit_cost" value="{{ row.cost_price|money_in }}" inputmode="decimal"></label></div>
+  <label class="check"><input type="checkbox" name="update_cost" value="1" checked> update cost price if it changed</label>
+  <label>Note (delivery note no., reason)<input name="note"></label>
   <button>Save</button>
 </form>
 </div>
 <h2>Stock history</h2>
-<table><tr><th>Date</th><th class="num">Change</th><th>Reason</th><th>Job</th><th>Note</th><th>By</th></tr>
-{% for m in moves %}<tr><td>{{ m.created_at }}</td><td class="num">{{ '%+d'|format(m.change) }}</td><td>{{ m.reason }}</td>
-<td>{% if m.job_id %}<a href="{{ url_for('job_view', jid=m.job_id) }}">#{{ m.job_id }}</a>{% endif %}</td><td>{{ m.note or '' }}</td><td>{{ m.who or '' }}</td></tr>
-{% else %}<tr><td colspan="6" class="muted">No movements.</td></tr>{% endfor %}</table>
+<div class="tablewrap"><table><tr><th>Date</th><th class="num">Change</th><th>Reason</th><th>Job</th><th class="num">Unit cost</th><th>Note</th><th>By</th></tr>
+{% for m in moves %}<tr><td>{{ m.created_at|d }}</td><td class="num {{ 'ok' if m.change > 0 else '' }}">{{ '%+g'|format(m.change) }}</td><td>{{ m.reason|replace('_',' ') }}</td>
+<td>{% if m.job_id %}<a href="{{ url_for('jobs.view', jid=m.job_id) }}">#{{ m.job_id }}</a>{% endif %}</td><td class="num">{{ m.unit_cost|chf(false) if m.unit_cost is not none else '' }}</td><td>{{ m.note or '' }}</td><td>{{ m.who or '' }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No movements.</td></tr>{% endfor %}</table></div>
 {% endblock %}

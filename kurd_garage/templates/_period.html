@@ -1,0 +1,2 @@
+<form class="toolbar no-print">From <input type="date" name="start" value="{{ start }}"> to <input type="date" name="end" value="{{ end }}"><button>Show</button>
+{% for p, l in [('year','this year'),('q1','Q1'),('q2','Q2'),('q3','Q3'),('q4','Q4'),('lastyear','last year')] %}<a class="btn small light" href="?preset={{ p }}">{{ l }}</a>{% endfor %}</form>

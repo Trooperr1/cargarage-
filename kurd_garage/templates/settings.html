@@ -1,0 +1,40 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, check with context %}
+{% block content %}
+<h1>⚙ Garage settings</h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <h3>Your garage <span class="muted small">(printed on invoices, quotes and the QR-bill)</span></h3>
+  <div class="cols4">
+    {{ input('Garage name', 'garage_name', S, required=true, cls='span2') }}
+    {{ input('Street', 'street', S) }}{{ input('No.', 'house_number', S) }}
+    {{ input('Postcode', 'postcode', S) }}{{ input('City', 'city', S) }}
+    <label>Canton<select name="canton"><option value="">—</option>{% for c in cantons %}<option {{ 'selected' if S.canton == c }}>{{ c }}</option>{% endfor %}</select></label>
+    {{ input('Country', 'country', S) }}
+    {{ input('Phone', 'phone', S) }}{{ input('E-mail', 'email', S) }}{{ input('Website', 'website', S) }}
+  </div>
+  <h3>Bank & VAT</h3>
+  <div class="cols4">
+    {{ input('IBAN or QR-IBAN (for QR-bill)', 'iban', S, cls='span2', extra='placeholder="CH93 0076 2011 6238 5295 7"') }}
+    {{ input('Bank name', 'bank_name', S) }}
+    {{ input('UID / VAT number', 'uid', S, extra='placeholder="CHE-123.456.789 MWST"') }}
+    <div>{{ check('Registered for VAT (MWST)', 'vat_registered', S) }}</div>
+    {{ input('Standard VAT rate %', 'vat_rate', S, extra='inputmode="decimal"') }}
+    <div>{{ check('Round totals to 5 Rappen', 'round_5_rappen', S) }}</div>
+  </div>
+  <h3>Prices & terms</h3>
+  <div class="cols4">
+    <label>Hourly rate CHF (excl. VAT)<input name="hourly_rate" value="{{ S.hourly_rate|int|money_in }}" inputmode="decimal"></label>
+    {{ input('Payment terms (days)', 'payment_days', S, type='number') }}
+    {{ input('Quotes valid for (days)', 'quote_valid_days', S, type='number') }}
+    <label>Tyre storage fee CHF<input name="tyre_storage_fee" value="{{ S.tyre_storage_fee|int|money_in }}" inputmode="decimal"></label>
+    <label>Reminder 2 fee CHF<input name="reminder_fee_2" value="{{ S.reminder_fee_2|int|money_in }}" inputmode="decimal"></label>
+    <label>Reminder 3 fee CHF<input name="reminder_fee_3" value="{{ S.reminder_fee_3|int|money_in }}" inputmode="decimal"></label>
+    {{ input('Days to pay after a reminder', 'reminder_days', S, type='number') }}
+    {{ input('Warn about MFK (days before)', 'mfk_warn_days', S, type='number') }}
+  </div>
+  <label>Text at the bottom of invoices<textarea name="invoice_footer" rows="2">{{ S.invoice_footer }}</textarea></label>
+  <h3>Backups</h3>
+  {{ input('Backup folder (empty = ' ~ default_backup ~ ')', 'backup_dir', S, extra='placeholder="e.g. D:\\Backups or a OneDrive / Google Drive folder"') }}
+  <p class="small muted">Tip: choose a folder inside OneDrive, Dropbox or Google Drive, then your backups are automatically in the cloud too.</p>
+  <button>Save settings</button>
+</form>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, money, select, textarea with context %}
+{% block content %}
+<h1>{{ 'Edit tyre set' if row else 'New tyre set' }} <span class="muted small">— {{ vehicle.plate or '' }} {{ vehicle.make }} {{ vehicle.model }}, {{ vehicle.owner }}</span></h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols4">
+    {{ select('Season', 'season', ['summer','winter','all-season'], row, blank=false) }}
+    {{ input('Brand', 'brand', row, extra='placeholder="Michelin, Continental…"') }}
+    {{ input('Model', 'model', row) }}
+    {{ input('Size', 'size', row, value=(row.size if row else (vehicle.tyre_size_summer or '')), extra='placeholder="205/55 R16 91H"') }}
+    {{ input('DOT (week/year, e.g. 2323)', 'dot', row, extra='maxlength="4"') }}
+    {{ select('Rims', 'rims', ['alloy','steel','none'], row) }}
+    {{ select('Status', 'status', statuses, row, blank=false) }}
+    {{ input('Storage place (rack / shelf)', 'location', row, extra='placeholder="A-12"') }}
+  </div>
+  <h3>Tread depth in mm</h3>
+  <div class="cols4">
+    {{ input('Front left', 'tread_fl', row, extra='inputmode="decimal"') }}
+    {{ input('Front right', 'tread_fr', row, extra='inputmode="decimal"') }}
+    {{ input('Rear left', 'tread_rl', row, extra='inputmode="decimal"') }}
+    {{ input('Rear right', 'tread_rr', row, extra='inputmode="decimal"') }}
+  </div>
+  <div class="cols4">
+    {{ input('Stored since', 'stored_at', row, type='date') }}
+    {{ money('Storage fee per season', 'fee', row, value=(none if row else (default_fee|money_in))) }}
+  </div>
+  {{ textarea('Notes (damage, bolts, hubcaps…)', 'notes', row, rows=2) }}
+  <button>Save</button>
+</form>
+{% endblock %}

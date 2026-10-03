@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% from "_macros.html" import contact with context %}
+{% block content %}
+<div class="titlebar"><h1>Who owes money</h1><button class="no-print" onclick="window.print()">🖨 Print</button></div>
+<div class="stats">{% for k, v in buckets.items() %}<div class="stat {{ 'warn' if v and k != 'not due' }}"><b>{{ v|chf }}</b><span>{{ k }}</span></div>{% endfor %}</div>
+<div class="tablewrap"><table><tr><th>Invoice</th><th>Customer</th><th>Contact</th><th>Due</th><th class="num">Days late</th><th>Reminder</th><th class="num">Open</th></tr>
+{% for r in rows %}<tr><td><a href="{{ url_for('invoices.view', iid=r.id) }}">{{ r.number }}</a></td><td><a href="{{ url_for('customers.view', cid=r.customer_id) }}">{{ r.customer }}</a></td>
+<td class="small">{{ contact(r) }}</td><td>{{ r.effective_due|d }}</td><td class="num {{ 'owed' if r.days_late > 0 }}">{{ r.days_late if r.days_late > 0 else '' }}</td>
+<td>{{ r.dunning_level or '' }}</td><td class="num">{{ r.open_amount|chf(false) }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">Nobody owes you money. 🎉</td></tr>{% endfor %}
+{% if rows %}<tr class="total-row"><td colspan="6">Total</td><td class="num">{{ rows|sum(attribute='open_amount')|chf(false) }}</td></tr>{% endif %}</table></div>
+{% endblock %}

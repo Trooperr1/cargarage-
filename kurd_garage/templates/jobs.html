@@ -1,8 +1,9 @@
 {% extends "base.html" %}{% from "_macros.html" import job_table with context %}
 {% block content %}
-<h1>Jobs</h1>
-<p class="tabs"><a href="{{ url_for('jobs') }}" class="{{ 'on' if not status }}">All</a>
-{% for s in statuses %}<a href="{{ url_for('jobs', status=s) }}" class="{{ 'on' if status == s }}">{{ s.replace('_',' ') }}</a>{% endfor %}
-<a href="{{ url_for('jobs', status='unpaid') }}" class="{{ 'on' if status == 'unpaid' }}">unpaid</a></p>
+<div class="titlebar"><h1>Jobs & quotes</h1><a class="btn" href="{{ url_for('vehicles.index') }}">+ New job (choose vehicle)</a></div>
+<p class="tabs">
+{% for key, label in [('active','in workshop'),('quote','quotes'),('open','open'),('in_progress','in progress'),('waiting_parts','waiting parts'),('done','ready'),('uninvoiced','not invoiced'),('delivered','delivered'),('cancelled','cancelled'),('','all')] %}
+<a href="{{ url_for('jobs.index', status=key) }}" class="{{ 'on' if status == key }}">{{ label }}</a>{% endfor %}</p>
+<form class="toolbar"><input type="hidden" name="status" value="{{ status }}"><input name="q" value="{{ request.args.q or '' }}" placeholder="Plate, customer, work, job no."><button>Search</button></form>
 {{ job_table(rows) }}
 {% endblock %}

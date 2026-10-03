@@ -7,7 +7,7 @@ if not exist .venv\Scripts\python.exe (
     echo First time setup, please wait...
     %PY% -m venv .venv || goto error
 )
-.venv\Scripts\python -c "import flask" 2>nul || (
+.venv\Scripts\python -c "import flask, qrbill" 2>nul || (
     echo Installing, please wait...
     .venv\Scripts\python -m pip install -r requirements.txt || goto error
 )

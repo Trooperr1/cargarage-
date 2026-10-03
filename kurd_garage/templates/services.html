@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% block content %}
+<h1>Standard services</h1>
+<p class="muted">Work you do often. On a job, pick it from the list and it is added with the right time or price.
+Leave “fixed price” empty to charge hours × hourly rate ({{ S.hourly_rate|int|chf }}).</p>
+{% for s in rows %}<form method="post" id="s{{ s.id }}"></form>{% endfor %}
+<div class="tablewrap"><table><tr><th>Code</th><th>Name</th><th class="num">Hours</th><th class="num">Fixed price CHF</th><th>Active</th><th></th></tr>
+{% for s in rows %}<tr>
+<td><input form="s{{ s.id }}" name="code" value="{{ s.code or '' }}" class="s"></td>
+<td><input form="s{{ s.id }}" name="name" value="{{ s.name }}"></td>
+<td class="num"><input form="s{{ s.id }}" name="hours" value="{{ s.hours|qty }}" class="n s"></td>
+<td class="num"><input form="s{{ s.id }}" name="fixed_price" value="{{ s.fixed_price|money_in }}" class="n"></td>
+<td><input form="s{{ s.id }}" type="checkbox" name="active" value="1" {{ 'checked' if s.active }}></td>
+<td>{% if session.role == 'admin' %}<input form="s{{ s.id }}" type="hidden" name="id" value="{{ s.id }}"><input form="s{{ s.id }}" type="hidden" name="csrf" value="{{ csrf }}"><button form="s{{ s.id }}" class="small">Save</button>{% endif %}</td>
+</tr>{% endfor %}
+</table></div>
+{% if session.role == 'admin' %}
+<form method="post" class="card row">{{ csrf_field() }}<b>+ New:</b>
+  <input name="code" placeholder="Code" class="s"><input name="name" placeholder="Name *" required><input name="hours" placeholder="Hours" value="1"><input name="fixed_price" placeholder="Fixed price CHF (optional)"><button>Add</button></form>
+{% endif %}
+{% endblock %}

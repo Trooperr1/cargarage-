@@ -1,0 +1,25 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Job card {{ job.id }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="paper">
+{% from "_macros.html" import print_header with context %}
+{{ print_header('JOB CARD', '#' ~ job.id, job.opened_at|d) }}
+<div class="grid2">
+  <div><b>Customer</b><br>{% for l in address %}{{ l }}<br>{% endfor %}{{ customer.mobile or customer.phone or '' }}</div>
+  <div><b>Vehicle</b><br><span class="plate">{{ vehicle.plate or '' }}</span> {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}<br>
+  VIN {{ vehicle.vin or '—' }}<br>Engine {{ vehicle.engine_code or '' }} {{ vehicle.fuel or '' }} {{ (vehicle.power_kw ~ ' kW') if vehicle.power_kw else '' }}<br>
+  Oil {{ vehicle.oil_spec or '—' }} · Key {{ vehicle.key_number or '—' }}</div>
+</div>
+<p>km in: <b>{{ job.mileage_in|km or '________' }}</b> · Fuel: {{ job.fuel_level or '____' }} · Mechanic: <b>{{ job.employee or '________' }}</b> · Ready by: {{ job.promised_at|replace('T',' ')|d or '________' }}
+{% if job.customer_waiting %} · <b>CUSTOMER IS WAITING</b>{% endif %}</p>
+<h3>Work requested</h3><p class="boxed">{{ job.complaint }}</p>
+{% if job.damages %}<h3>Damage at check-in</h3><p>{{ job.damages }}</p>{% endif %}
+{% if job.internal_notes %}<h3>Notes</h3><p>{{ job.internal_notes }}</p>{% endif %}
+<h3>Planned work & parts</h3>
+<table class="print-items"><tr><th>✔</th><th>Description</th><th class="num">Qty</th></tr>
+{% for i in items %}<tr><td class="checkbox">☐</td><td>{{ i.description }}</td><td class="num">{{ i.quantity|qty }} {{ i.unit }}</td></tr>{% endfor %}
+{% for n in range(6) %}<tr><td class="checkbox">☐</td><td>&nbsp;</td><td></td></tr>{% endfor %}</table>
+<h3>Findings / extra work found (call customer before doing it!)</h3><div class="lines"></div>
+<div class="grid2"><div class="sign"><div>Time: start / end</div></div><div class="sign"><div>Quality check / test drive — signature</div></div></div>
+<p class="no-print center"><button onclick="window.print()">🖨 Print</button></p>
+</body></html>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, status_badge with context %}
+{% block content %}
+<div class="titlebar"><h1>{{ row.full_name }} <span class="muted small">{{ row.role }}</span>{% if not row.active %} <span class="badge">inactive</span>{% endif %}</h1>
+<div><form class="inline"><input type="month" name="month" value="{{ month }}" onchange="this.form.submit()"></form>
+<a class="btn light" href="{{ url_for('staff.edit', eid=row.id) }}">Edit</a></div></div>
+<div class="grid2">
+<div>
+<h2>Current jobs</h2>
+<div class="tablewrap"><table>{% for j in jobs %}<tr><td><a href="{{ url_for('jobs.view', jid=j.id) }}">#{{ j.id }}</a></td><td>{{ j.plate }} {{ j.make }} {{ j.model }}</td><td>{{ j.complaint|truncate(40) }}</td><td>{{ status_badge(j.status) }}</td></tr>
+{% else %}<tr><td class="muted">No active jobs.</td></tr>{% endfor %}</table></div>
+<h2>Hours per day</h2>
+<div class="tablewrap"><table>{% for d, h in days|dictsort %}<tr><td>{{ d|d }}</td><td class="num">{{ h|qty }} h</td></tr>{% endfor %}
+<tr class="total-row"><td>Total {{ month }}</td><td class="num">{{ total|qty }} h</td></tr></table></div>
+</div>
+<div>
+<form method="post" action="{{ url_for('staff.time_add', eid=row.id) }}" class="card row">{{ csrf_field() }}
+  <b>Other time (no job):</b><input type="date" name="work_date" value="{{ today }}"><input name="hours" placeholder="hours" inputmode="decimal" required><input name="note" placeholder="cleaning, training…"><button>Add</button>
+</form>
+<h2>Time entries</h2>
+<div class="tablewrap"><table><tr><th>Date</th><th>Job</th><th class="num">Hours</th><th>Note</th></tr>
+{% for t in times %}<tr><td>{{ t.work_date|d }}</td><td>{% if t.job_id %}<a href="{{ url_for('jobs.view', jid=t.job_id) }}">#{{ t.job_id }} {{ t.plate or '' }}</a>{% else %}—{% endif %}</td><td class="num">{{ t.hours|qty }}</td><td>{{ t.note or '' }}</td></tr>
+{% else %}<tr><td colspan="4" class="muted">No time recorded this month.</td></tr>{% endfor %}</table></div>
+</div></div>
+{% endblock %}

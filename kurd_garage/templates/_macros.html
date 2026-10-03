@@ -1,21 +1,102 @@
 {% macro csrf_field() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
 
-{% macro status_badge(s) %}<span class="badge s-{{ s }}">{{ s.replace('_', ' ') }}</span>{% endmacro %}
+{% macro v(row, name) %}{% if row %}{% set x = row[name] %}{% if x is not none and x is not undefined %}{{ x }}{% endif %}{% endif %}{% endmacro %}
+
+{% macro input(label, name, row=none, type='text', required=false, extra='', value=none, cls='') -%}
+<label class="{{ cls }}">{{ label }}{% if required %} *{% endif %}
+  <input type="{{ type }}" name="{{ name }}" value="{{ value if value is not none else v(row, name) }}" {{ 'required' if required }} {{ extra|safe }}>
+</label>
+{%- endmacro %}
+
+{% macro money(label, name, row=none, value=none, required=false, cls='') -%}
+<label class="{{ cls }}">{{ label }} (CHF){% if required %} *{% endif %}
+  <input type="text" inputmode="decimal" name="{{ name }}" value="{{ value if value is not none else (row[name]|money_in if row and row[name] is not none and row[name] is number else v(row, name)) }}" {{ 'required' if required }} placeholder="0.00">
+</label>
+{%- endmacro %}
+
+{% macro select(label, name, options, row=none, blank=true, value=none, cls='') -%}
+{% set cur = value if value is not none else v(row, name) %}
+<label class="{{ cls }}">{{ label }}
+  <select name="{{ name }}">
+    {% if blank %}<option value="">—</option>{% endif %}
+    {% for o in options %}
+      {% if o is string %}<option value="{{ o }}" {{ 'selected' if cur|string == o }}>{{ o }}</option>
+      {% else %}<option value="{{ o[0] }}" {{ 'selected' if cur|string == o[0]|string }}>{{ o[1] }}</option>{% endif %}
+    {% endfor %}
+  </select>
+</label>
+{%- endmacro %}
+
+{% macro textarea(label, name, row=none, rows=3, cls='') -%}
+<label class="{{ cls }}">{{ label }}<textarea name="{{ name }}" rows="{{ rows }}">{{ v(row, name) }}</textarea></label>
+{%- endmacro %}
+
+{% macro check(label, name, row=none, default=false) -%}
+<label class="check"><input type="checkbox" name="{{ name }}" value="1" {{ 'checked' if (row and row[name]|string in ('1','True')) or (not row and default) }}> {{ label }}</label>
+{%- endmacro %}
+
+{% macro status_badge(s) %}<span class="badge s-{{ s|replace(' ', '_') }}">{{ s|replace('_', ' ') }}</span>{% endmacro %}
+
+{% macro contact(c) -%}
+{% if c.mobile %}<a href="tel:{{ c.mobile|replace(' ','') }}">📱 {{ c.mobile }}</a> {% endif %}
+{% if c.phone %}<a href="tel:{{ c.phone|replace(' ','') }}">📞 {{ c.phone }}</a> {% endif %}
+{%- endmacro %}
+
+{% macro due_badge(d) -%}
+{% set n = d|days_until %}
+{% if n is none %}{% elif n < 0 %}<span class="badge s-cancelled">{{ d|d }} · {{ -n }} days overdue</span>
+{% elif n <= 30 %}<span class="badge s-waiting_parts">{{ d|d }} · in {{ n }} days</span>
+{% else %}{{ d|d }}{% endif %}
+{%- endmacro %}
 
 {% macro job_table(rows, show_customer=true) %}
-<table>
-  <tr><th>#</th><th>Date</th>{% if show_customer %}<th>Customer</th>{% endif %}<th>Car</th><th>Mechanic</th><th>Status</th><th class="num">Total</th><th class="num">Owed</th></tr>
+<div class="tablewrap"><table>
+  <tr><th>#</th><th>Opened</th>{% if show_customer %}<th>Customer</th>{% endif %}<th>Vehicle</th><th>Work</th><th>Mechanic</th><th>Status</th><th class="num">Net</th><th>Invoice</th></tr>
   {% for j in rows %}
   <tr>
-    <td><a href="{{ url_for('job_view', jid=j.id) }}">#{{ j.id }}</a></td>
-    <td>{{ j.opened_at[:10] }}</td>
-    {% if show_customer %}<td><a href="{{ url_for('customer_view', cid=j.customer_id) }}">{{ j.customer }}</a></td>{% endif %}
-    <td><a href="{{ url_for('vehicle_view', vid=j.vehicle_id) }}">{{ j.plate }}</a> {{ j.make }} {{ j.model }}</td>
-    <td>{{ j.mechanic or '-' }}</td>
-    <td>{{ status_badge(j.status) }}</td>
-    <td class="num">{{ j.total|money }}</td>
-    <td class="num {% if j.total > j.paid and j.status != 'cancelled' %}owed{% endif %}">{{ (j.total - j.paid)|money }}</td>
+    <td><a href="{{ url_for('jobs.view', jid=j.id) }}">#{{ j.id }}</a></td>
+    <td>{{ j.opened_at|d }}{% if j.promised_at %}<div class="small muted">due {{ j.promised_at|replace('T',' ')|d }}</div>{% endif %}</td>
+    {% if show_customer %}<td><a href="{{ url_for('customers.view', cid=j.customer_id) }}">{{ j.customer }}</a></td>{% endif %}
+    <td><a href="{{ url_for('vehicles.view', vid=j.vehicle_id) }}">{{ j.plate or '—' }}</a> <span class="muted">{{ j.make }} {{ j.model }}</span></td>
+    <td class="clip">{{ j.complaint }}</td>
+    <td>{{ j.employee or '—' }}</td>
+    <td>{{ status_badge(j.status) }}{% if j.customer_waiting %} <span class="badge s-cancelled" title="Customer is waiting">waiting</span>{% endif %}</td>
+    <td class="num">{{ j.net|chf(false) }}</td>
+    <td>{% if j.invoice_id %}<a href="{{ url_for('invoices.view', iid=j.invoice_id) }}">{{ j.invoice_number }}</a>{% endif %}</td>
   </tr>
-  {% else %}<tr><td colspan="8" class="muted">No jobs.</td></tr>{% endfor %}
-</table>
+  {% else %}<tr><td colspan="9" class="muted">No jobs.</td></tr>{% endfor %}
+</table></div>
+{% endmacro %}
+
+{% macro files_block(entity, eid, files) %}
+<div class="card" id="files">
+  <h3>📎 Photos & documents</h3>
+  <div class="gallery">
+  {% for f in files %}
+    <div class="file">
+      {% if f.stored_name.rsplit('.',1)[-1] in ('jpg','jpeg','png','gif','webp') %}
+        <a href="{{ url_for('admin.file', fid=f.id) }}" target="_blank"><img src="{{ url_for('admin.file', fid=f.id) }}" alt=""></a>
+      {% else %}<a class="doc" href="{{ url_for('admin.file', fid=f.id) }}" target="_blank">📄 {{ f.original_name }}</a>{% endif %}
+      <div class="small">{{ f.caption or '' }} <span class="muted">{{ f.created_at|d }}</span>
+        <form method="post" action="{{ url_for('admin.file_delete', fid=f.id) }}" class="inline" onsubmit="return confirm('Delete this file?')">{{ csrf_field() }}<button class="link">✕</button></form></div>
+    </div>
+  {% else %}<p class="muted small">No files yet. Add photos of damage, documents, receipts…</p>{% endfor %}
+  </div>
+  <form method="post" enctype="multipart/form-data" action="{{ url_for('admin.upload', entity=entity, eid=eid) }}" class="row">{{ csrf_field() }}
+    <input type="file" name="files" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+    <input name="caption" placeholder="Caption (optional)">
+    <button>Upload</button>
+  </form>
+</div>
+{% endmacro %}
+
+{% macro print_header(title, number='', date='') %}
+<div class="inv-head">
+  <div>
+    <div class="garage-name">{{ S.garage_name }}</div>
+    <div class="small">{{ S.street }} {{ S.house_number }}<br>{{ S.postcode }} {{ S.city }}<br>
+    {% if S.phone %}Tel. {{ S.phone }}<br>{% endif %}{% if S.email %}{{ S.email }}<br>{% endif %}{% if S.website %}{{ S.website }}{% endif %}</div>
+  </div>
+  <div class="right"><h2>{{ title }}</h2>{% if number %}<div><b>{{ number }}</b></div>{% endif %}{% if date %}<div>{{ date }}</div>{% endif %}</div>
+</div>
 {% endmacro %}

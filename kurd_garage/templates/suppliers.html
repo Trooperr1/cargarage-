@@ -1,10 +1,18 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, textarea with context %}
 {% block content %}
 <h1>Suppliers</h1>
-<form method="post" class="card row">{{ csrf_field() }}
-  <input name="name" placeholder="Name *" required><input name="phone" placeholder="Phone"><input name="address" placeholder="Address"><button>+ Add</button>
+<form method="post" action="{{ url_for('parts.suppliers', sid=row.id) if row else url_for('parts.suppliers') }}" class="card">{{ csrf_field() }}
+  <h3>{{ 'Edit ' ~ row.name if row else '+ New supplier' }}</h3>
+  <div class="cols4">
+    {{ input('Name', 'name', row, required=true) }}{{ input('Contact person', 'contact_person', row) }}{{ input('Phone', 'phone', row) }}{{ input('E-mail', 'email', row, type='email') }}
+    {{ input('Website / shop', 'website', row) }}{{ input('Street', 'street', row) }}{{ input('Postcode', 'postcode', row) }}{{ input('City', 'city', row) }}
+    {{ input('Our customer number', 'customer_number', row) }}
+  </div>
+  {{ textarea('Notes (delivery times, conditions…)', 'notes', row, rows=2) }}
+  <button>Save</button>{% if row %} <a href="{{ url_for('parts.suppliers') }}">cancel</a>{% endif %}
 </form>
-<table><tr><th>Name</th><th>Phone</th><th>Address</th></tr>
-{% for s in rows %}<tr><td>{{ s.name }}</td><td>{{ s.phone or '' }}</td><td>{{ s.address or '' }}</td></tr>
-{% else %}<tr><td colspan="3" class="muted">No suppliers.</td></tr>{% endfor %}</table>
+<div class="tablewrap"><table><tr><th>Name</th><th>Contact</th><th>Phone</th><th>E-mail</th><th>Our no.</th><th class="num">Parts</th><th class="num">Spent this year</th><th></th></tr>
+{% for s in rows %}<tr><td>{{ s.name }}{% if s.website %} <a href="{{ s.website if '://' in s.website else 'https://' ~ s.website }}" target="_blank">↗</a>{% endif %}</td><td>{{ s.contact_person or '' }}</td><td>{{ s.phone or '' }}</td><td>{{ s.email or '' }}</td><td>{{ s.customer_number or '' }}</td>
+<td class="num">{{ s.parts }}</td><td class="num">{{ s.spent_year|chf(false) }}</td><td><a href="{{ url_for('parts.suppliers', sid=s.id) }}">edit</a></td></tr>
+{% else %}<tr><td colspan="8" class="muted">No suppliers.</td></tr>{% endfor %}</table></div>
 {% endblock %}

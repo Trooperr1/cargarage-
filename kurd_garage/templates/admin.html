@@ -1,32 +1,45 @@
 {% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
 {% block content %}
-<h1>Admin</h1>
+<div class="titlebar"><h1>Admin</h1><div><a class="btn" href="{{ url_for('admin.settings_page') }}">⚙ Garage settings</a>
+<a class="btn light" href="{{ url_for('admin.services') }}">Standard services</a> <a class="btn light" href="{{ url_for('admin.log') }}">Activity log</a></div></div>
+{% if not S.iban or not S.street %}<p class="flash error">Please fill in your garage address, phone and IBAN under <a href="{{ url_for('admin.settings_page') }}">Garage settings</a>. They are printed on every invoice.</p>{% endif %}
 <div class="grid2">
 <div class="card">
-  <h2>Data safety</h2>
-  <p>Database check: {% if ok %}<b class="ok">✔ OK</b>{% else %}<b class="owed">✖ {{ result }} ({{ broken }} broken links)</b>{% endif %}</p>
-  <form method="post" action="{{ url_for('admin_backup') }}">{{ csrf_field() }}<button>💾 Make backup & download</button></form>
-  <p class="muted small">A backup is also made automatically each time the program starts. Last 30 are kept. Copy them to a USB stick or cloud regularly!</p>
-  <details><summary>{{ backups|length }} backups on this computer</summary>{% for b in backups %}<div class="small">{{ b }}</div>{% endfor %}</details>
+  <h2>💾 Data safety</h2>
+  <p>Database check: {% if ok %}<b class="ok">✔ healthy</b>{% else %}<b class="owed">✖ {{ result }} ({{ broken }} broken links) — make a backup and call for help</b>{% endif %}</p>
+  <p class="small">Records: {% for k, n in counts.items() %}{{ k }} {{ n }}{{ ' · ' if not loop.last }}{% endfor %}</p>
+  <p class="small">Data file: <code>{{ db_path }}</code></p>
+  <p class="small">Backups folder: <code>{{ backup_path }}</code><br>A backup is made automatically every day and every time the program starts (last 60 kept).
+  <b>Also copy backups to a USB stick or cloud regularly!</b></p>
+  <form method="post" action="{{ url_for('admin.backup') }}">{{ csrf_field() }}<button>💾 Make backup now & download</button></form>
+  <details><summary>{{ backup_count }} backups</summary>{% for f, size in backups %}<div class="small"><a href="{{ url_for('admin.backup_download', name=f) }}">{{ f }}</a> ({{ (size / 1024)|round|int }} KB)</div>{% endfor %}</details>
+  <details><summary class="owed">Restore from a backup…</summary>
+    <form method="post" action="{{ url_for('admin.restore') }}" enctype="multipart/form-data">{{ csrf_field() }}
+      <p class="small">This replaces ALL current data with the backup. Your current data is saved as a backup first.</p>
+      <input type="file" name="file" accept=".zip" required>
+      <label>Type RESTORE to confirm<input name="confirm" autocomplete="off"></label>
+      <button class="danger">Restore</button></form>
+  </details>
   <h3>Export to Excel (CSV)</h3>
-  <p>{% for t in tables %}<a class="btn small light" href="{{ url_for('export_csv', table=t) }}">{{ t }}</a> {% endfor %}</p>
+  <p>{% for t in tables %}<a class="btn small light" href="{{ url_for('admin.export_csv', table=t) }}">{{ t }}</a> {% endfor %}</p>
 </div>
-<form method="post" class="card">{{ csrf_field() }}
-  <h2>Add user</h2>
-  <label>Username <input name="username" required></label>
-  <label>Full name <input name="full_name" required></label>
-  <label>Password (6+ characters) <input name="password" type="password" required minlength="6"></label>
-  <label>Role <select name="role"><option value="staff">staff</option><option value="admin">admin</option></select></label>
+<div>
+<form method="post" action="{{ url_for('admin.user_add') }}" class="card">{{ csrf_field() }}
+  <h2>👤 Add login</h2>
+  <div class="cols2">
+  <label>Username<input name="username" required autocomplete="off"></label>
+  <label>Full name<input name="full_name" required></label>
+  <label>Password (6+ characters)<input name="password" type="password" required minlength="6" autocomplete="new-password"></label>
+  <label>Role<select name="role"><option value="staff">staff (normal work)</option><option value="admin">admin (settings, delete, backups)</option></select></label>
+  </div>
   <button>Create</button>
 </form>
+<div class="card"><h2>Logins</h2>
+<table><tr><th>Username</th><th>Name</th><th>Role</th><th>Last login</th><th></th></tr>
+{% for u in users %}<tr class="{{ '' if u.active else 'muted' }}"><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role }}</td><td class="small">{{ u.last_login|d }}</td>
+<td class="nowrap"><form method="post" action="{{ url_for('admin.user_toggle', uid=u.id) }}" class="inline">{{ csrf_field() }}<button class="small light">{{ 'Disable' if u.active else 'Enable' }}</button></form>
+<details class="inline"><summary class="small">new password</summary><form method="post" action="{{ url_for('admin.user_password', uid=u.id) }}" class="row">{{ csrf_field() }}<input type="password" name="password" minlength="6" required autocomplete="new-password"><button class="small">Set</button></form></details></td></tr>{% endfor %}
+</table></div>
 </div>
-<h2>Users</h2>
-<table><tr><th>Username</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
-{% for u in users %}<tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.role }}</td><td>{{ 'active' if u.active else 'disabled' }}</td>
-<td><form method="post" action="{{ url_for('user_toggle', uid=u.id) }}" class="inline">{{ csrf_field() }}<button class="small light">{{ 'Disable' if u.active else 'Enable' }}</button></form></td></tr>{% endfor %}
-</table>
-<h2>Activity log (last 100)</h2>
-<table><tr><th>When</th><th>User</th><th>Action</th><th>What</th><th>Details</th></tr>
-{% for a in log %}<tr><td>{{ a.created_at }}</td><td>{{ a.username or '' }}</td><td>{{ a.action }}</td><td>{{ a.entity }} {{ '#' ~ a.entity_id if a.entity_id }}</td><td>{{ a.details or '' }}</td></tr>{% endfor %}
-</table>
+</div>
 {% endblock %}

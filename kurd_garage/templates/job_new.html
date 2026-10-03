@@ -1,12 +1,21 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, select, check with context %}
 {% block content %}
-<h1>New job — {{ vehicle.plate }} {{ vehicle.make }} {{ vehicle.model }}</h1>
-<p class="muted">Owner: {{ vehicle.owner }}</p>
-<form method="post" class="card narrow">{{ csrf_field() }}
-  <label>What does the customer want / problem * <textarea name="complaint" required></textarea></label>
-  <label>Mileage now (km) <input name="mileage_in" type="number" min="0" value="{{ vehicle.mileage if vehicle.mileage is not none else '' }}"></label>
-  <label>Mechanic <select name="mechanic_id"><option value="">— not assigned —</option>
-    {% for m in mechanics %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}</select></label>
-  <button>Open job</button>
+<h1>{{ 'New quote' if kind == 'quote' else 'Check in vehicle — new job' }}</h1>
+<p><span class="plate big">{{ vehicle.plate or 'no plate' }}</span> {{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.owner }}
+{% if vehicle.mileage %}<span class="muted">· last known {{ vehicle.mileage|km }}</span>{% endif %}</p>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols2">
+  <label>Type <select name="kind"><option value="job">Job (vehicle is here / will be worked on)</option><option value="quote" {{ 'selected' if kind == 'quote' }}>Quote only (price estimate)</option></select></label>
+  <label>Mechanic <select name="employee_id"><option value="">— not assigned —</option>{% for e in employees %}<option value="{{ e.id }}" {{ 'selected' if appt and appt.employee_id == e.id }}>{{ e.full_name }}</option>{% endfor %}</select></label>
+  </div>
+  <label>What does the customer want / what is the problem? *<textarea name="complaint" rows="3" required>{{ appt.title if appt else '' }}{{ ('\n' ~ appt.notes) if appt and appt.notes else '' }}</textarea></label>
+  <div class="cols4">
+    <label>Mileage now (km)<input name="mileage_in" type="number" min="0" placeholder="{{ vehicle.mileage or '' }}"></label>
+    <label>Fuel level<select name="fuel_level"><option value="">—</option>{% for f in ['empty','1/4','1/2','3/4','full'] %}<option>{{ f }}</option>{% endfor %}</select></label>
+    <label>Promised ready at<input name="promised_at" type="datetime-local"></label>
+    <div>{{ check('Customer is waiting', 'customer_waiting') }}</div>
+  </div>
+  <label>Existing damage noticed at check-in<textarea name="damages" rows="2" placeholder="e.g. scratch rear bumper left, chip in windscreen"></textarea></label>
+  <button>{{ 'Create quote' if kind == 'quote' else 'Open job' }}</button>
 </form>
 {% endblock %}

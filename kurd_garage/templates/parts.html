@@ -1,12 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Parts & stock</h1>
-<form class="toolbar"><input name="q" value="{{ request.args.q or '' }}" placeholder="Name or part number">
-<label class="check"><input type="checkbox" name="low" value="1" {{ 'checked' if low }}> low stock only</label><button>Search</button>
-<a class="btn" href="{{ url_for('part_form') }}">+ New part</a> <a class="btn light" href="{{ url_for('suppliers') }}">Suppliers</a></form>
-<p class="muted">Stock value (cost): <b>{{ value|money }}</b></p>
-<table><tr><th>Part #</th><th>Name</th><th>Supplier</th><th class="num">Cost</th><th class="num">Sell</th><th class="num">Stock</th><th>Location</th></tr>
-{% for p in rows %}<tr><td>{{ p.part_number }}</td><td><a href="{{ url_for('part_view', pid=p.id) }}">{{ p.name }}</a></td><td>{{ p.supplier or '' }}</td>
-<td class="num">{{ p.cost_price|money }}</td><td class="num">{{ p.sell_price|money }}</td><td class="num {{ 'owed' if p.quantity <= p.reorder_level }}">{{ p.quantity }}</td><td>{{ p.location or '' }}</td></tr>
-{% else %}<tr><td colspan="7" class="muted">No parts.</td></tr>{% endfor %}</table>
+<div class="titlebar"><h1>Parts & stock</h1>
+<div><a class="btn" href="{{ url_for('parts.edit') }}">+ New part</a> <a class="btn light" href="{{ url_for('parts.order_list') }}">Order list</a>
+<a class="btn light" href="{{ url_for('parts.suppliers') }}">Suppliers</a> <a class="btn light" href="{{ url_for('reports.stock') }}">Stock report</a></div></div>
+<form class="toolbar"><input name="q" value="{{ request.args.q or '' }}" placeholder="Name, part number, brand, barcode" autofocus>
+<select name="category"><option value="">all categories</option>{% for c in categories %}<option {{ 'selected' if request.args.category == c }}>{{ c }}</option>{% endfor %}</select>
+<label class="check"><input type="checkbox" name="low" value="1" {{ 'checked' if request.args.low }}> low stock</label>
+<label class="check"><input type="checkbox" name="inactive" value="1" {{ 'checked' if request.args.inactive }}> show inactive</label><button>Search</button></form>
+<p class="muted">Stock value at cost: <b>{{ value|chf }}</b></p>
+<div class="tablewrap"><table><tr><th>Part no.</th><th>Name</th><th>Brand</th><th>Category</th><th>Supplier</th><th class="num">Cost</th><th class="num">Sell</th><th class="num">Margin</th><th class="num">Stock</th><th>Place</th></tr>
+{% for p in rows %}<tr class="{{ '' if p.active else 'muted' }}"><td>{{ p.part_number }}</td><td><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a></td><td>{{ p.brand or '' }}</td><td>{{ p.category or '' }}</td><td>{{ p.supplier or '' }}</td>
+<td class="num">{{ p.cost_price|chf(false) }}</td><td class="num">{{ p.sell_price|chf(false) }}</td>
+<td class="num small">{{ ((p.sell_price - p.cost_price) / p.sell_price * 100)|round|int ~ '%' if p.sell_price else '' }}</td>
+<td class="num {{ 'owed' if p.quantity <= p.reorder_level }}">{{ p.quantity|qty }} {{ p.unit }}</td><td>{{ p.location or '' }}</td></tr>
+{% else %}<tr><td colspan="10" class="muted">No parts.</td></tr>{% endfor %}</table></div>
 {% endblock %}

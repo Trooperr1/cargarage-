@@ -1,0 +1,14 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, money, select, textarea, check with context %}
+{% block content %}
+<h1>{{ 'Edit employee' if row else 'New employee' }}</h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols3">
+    {{ input('First name', 'first_name', row, required=true) }}{{ input('Last name', 'last_name', row) }}{{ select('Role', 'role', roles, row, blank=false) }}
+    {{ input('Phone', 'phone', row, type='tel') }}{{ input('E-mail', 'email', row, type='email') }}{{ input('Start date', 'start_date', row, type='date') }}
+    {{ money('Cost per hour (salary + social costs, only for reports)', 'hourly_cost', row) }}
+  </div>
+  {% if row %}{{ check('Active', 'active', row) }}{% endif %}
+  {{ textarea('Notes (qualifications, certificates…)', 'notes', row, rows=2) }}
+  <button>Save</button>
+</form>
+{% endblock %}

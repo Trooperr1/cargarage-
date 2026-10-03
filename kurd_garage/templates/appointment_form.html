@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, check with context %}
+{% block content %}
+<h1>{{ 'Appointment' if row else 'New appointment' }}</h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols4">
+    <label>Date *<input type="date" name="day" required value="{{ row.starts_at[:10] if row else day }}"></label>
+    <label>Time *<input type="time" name="time" required step="900" value="{{ row.starts_at[11:16] if row else '08:00' }}"></label>
+    <label>Duration<select name="minutes">{% for m in [15,30,45,60,90,120,180,240,480] %}<option value="{{ m }}" {{ 'selected' if (row.minutes if row else 60) == m }}>{{ m // 60 ~ ' h ' if m >= 60 else '' }}{{ (m % 60) ~ ' min' if m % 60 else '' }}</option>{% endfor %}</select></label>
+    <label>Mechanic<select name="employee_id"><option value="">—</option>{% for e in employees %}<option value="{{ e.id }}" {{ 'selected' if row and row.employee_id == e.id }}>{{ e.full_name }}</option>{% endfor %}</select></label>
+  </div>
+  <label>What for? *<input name="title" required value="{{ row.title if row else '' }}" placeholder="Service, MFK, tyre change, noise from front…" list="titles"></label>
+  <div class="cols2">
+    <label>Vehicle (existing customer)<select name="vehicle_id"><option value="">—</option>{% for v in vehicles %}<option value="{{ v.id }}" {{ 'selected' if (row and row.vehicle_id == v.id) or preset_vehicle == v.id }}>{{ v.plate or '—' }} {{ v.make }} {{ v.model }} — {{ v.owner }}</option>{% endfor %}</select></label>
+    <label>…or customer only<select name="customer_id"><option value="">—</option>{% for c in customers %}<option value="{{ c.id }}" {{ 'selected' if row and row.customer_id == c.id }}>{{ c.display_name }} {{ c.mobile or c.phone or '' }}</option>{% endfor %}</select></label>
+    <label>…or new caller: name<input name="contact_name" value="{{ row.contact_name or '' if row else '' }}"></label>
+    <label>Phone<input name="contact_phone" type="tel" value="{{ row.contact_phone or '' if row else '' }}"></label>
+  </div>
+  <div class="cols2">
+    <label>Status<select name="status">{% for s in ['booked','arrived','no_show','cancelled'] %}<option value="{{ s }}" {{ 'selected' if row and row.status == s }}>{{ s.replace('_',' ') }}</option>{% endfor %}</select></label>
+    <div>{{ check('Customer needs a courtesy car', 'courtesy_car', row) }}</div>
+  </div>
+  <label>Notes<textarea name="notes" rows="2">{{ row.notes or '' if row else '' }}</textarea></label>
+  <button>Save</button>
+  {% if row and row.vehicle_id and not row.job_id %}<a class="btn light" href="{{ url_for('jobs.new', vid=row.vehicle_id, appointment=row.id) }}">Vehicle arrived → open job</a>{% endif %}
+  {% if row and row.job_id %}<a class="btn light" href="{{ url_for('jobs.view', jid=row.job_id) }}">Open job #{{ row.job_id }}</a>{% endif %}
+</form>
+{% if row %}<form method="post" action="{{ url_for('appointments.delete', aid=row.id) }}" onsubmit="return confirm('Delete appointment?')">{{ csrf_field() }}<button class="danger small">Delete appointment</button></form>{% endif %}
+<datalist id="titles">{% for t in ['Service','Oil service','MFK preparation','MFK','Tyre change','Brakes','Diagnosis','Air conditioning service','Repair'] %}<option value="{{ t }}">{% endfor %}</datalist>
+{% endblock %}

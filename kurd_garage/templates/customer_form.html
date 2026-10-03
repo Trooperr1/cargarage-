@@ -1,12 +1,41 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, select, textarea, check, v with context %}
 {% block content %}
-<h1>{{ 'Edit customer' if row else 'New customer' }}</h1>
-<form method="post" class="card narrow">{{ csrf_field() }}
-  <label>Name * <input name="name" required value="{{ row.name if row else '' }}"></label>
-  <label>Phone * <input name="phone" required value="{{ row.phone if row else '' }}"></label>
-  <label>Second phone <input name="phone2" value="{{ row.phone2 or '' if row else '' }}"></label>
-  <label>Address <input name="address" value="{{ row.address or '' if row else '' }}"></label>
-  <label>Notes <textarea name="notes">{{ row.notes or '' if row else '' }}</textarea></label>
+<h1>{{ 'Edit customer' if cid else 'New customer' }}</h1>
+<form method="post" class="card">{{ csrf_field() }}
+  <div class="cols3">
+    {{ select('Type', 'kind', [('private','Private person'),('company','Company')], row, blank=false) }}
+    {{ select('Salutation', 'salutation', ['Mr','Ms','Family','Company'], row) }}
+    {{ input('Company name', 'company', row) }}
+    {{ input('First name', 'first_name', row) }}
+    {{ input('Last name', 'last_name', row) }}
+    {{ input('Contact person (company)', 'contact_person', row) }}
+  </div>
+  <h3>Address</h3>
+  <div class="cols4">
+    {{ input('Street', 'street', row, cls='span2') }}
+    {{ input('No.', 'house_number', row) }}
+    {{ select('Canton', 'canton', cantons, row) }}
+    {{ input('Postcode', 'postcode', row, extra='inputmode="numeric" maxlength="10"') }}
+    {{ input('City', 'city', row, cls='span2') }}
+    {{ input('Country', 'country', row, value=(v(row,'country') or 'CH'), extra='maxlength="2"') }}
+  </div>
+  <h3>Contact <span class="muted small">(at least one)</span></h3>
+  <div class="cols3">
+    {{ input('Mobile', 'mobile', row, type='tel', extra='placeholder="079 123 45 67"') }}
+    {{ input('Phone', 'phone', row, type='tel', extra='placeholder="044 123 45 67"') }}
+    {{ input('E-mail', 'email', row, type='email') }}
+  </div>
+  <h3>Details</h3>
+  <div class="cols4">
+    {{ input('Date of birth', 'birth_date', row, type='date') }}
+    {{ input('VAT / UID number (company)', 'vat_number', row, extra='placeholder="CHE-123.456.789"') }}
+    {{ input('Payment terms (days)', 'payment_days', row, type='number', extra='min="0" max="365" placeholder="' ~ S.payment_days ~ '"') }}
+    {{ input('Standard discount %', 'discount_pct', row, extra='inputmode="decimal" placeholder="0"') }}
+    {{ select('How did they find us?', 'source', ['Recommendation','Google','Walk-in','Social media','Advertising','Returning','Other'], row) }}
+  </div>
+  {{ check('Send reminders (MFK, service, tyres)', 'reminders_ok', row, default=true) }}
+  {{ textarea('Notes', 'notes', row) }}
   <button>Save</button>
+  {% if not cid %}<button name="then" value="vehicle" class="light">Save & add vehicle</button>{% endif %}
 </form>
 {% endblock %}

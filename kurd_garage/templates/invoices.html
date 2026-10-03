@@ -1,0 +1,16 @@
+{% extends "base.html" %}{% from "_macros.html" import status_badge with context %}
+{% block content %}
+<div class="titlebar"><h1>Invoices</h1><a class="btn light" href="{{ url_for('reports.receivables') }}">Who owes money?</a></div>
+<p class="tabs">{% for key, label in [('open','open'),('overdue','overdue'),('paid','paid'),('cancelled','cancelled'),('all','all')] %}
+<a href="{{ url_for('invoices.index', filter=key) }}" class="{{ 'on' if filter == key }}">{{ label }}</a>{% endfor %}</p>
+<div class="tablewrap"><table><tr><th>Number</th><th>Date</th><th>Customer</th><th>Vehicle</th><th>Due</th><th class="num">Total</th><th class="num">Open</th><th>Status</th></tr>
+{% for i in rows %}<tr>
+<td><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a></td><td>{{ i.issue_date|d }}</td>
+<td><a href="{{ url_for('customers.view', cid=i.customer_id) }}">{{ i.customer }}</a></td><td>{{ i.plate or '' }}</td>
+<td>{{ i.effective_due|d }}{% if i.dunning_level %} <span class="badge s-waiting_parts">reminder {{ i.dunning_level }}</span>{% endif %}</td>
+<td class="num">{{ i.total|chf(false) }}</td><td class="num {{ 'owed' if i.open_amount > 0 }}">{{ i.open_amount|chf(false) if i.status == 'issued' else '' }}</td>
+<td>{% if i.status == 'cancelled' %}{{ status_badge('cancelled') }}{% elif i.open_amount <= 0 %}{{ status_badge('paid') }}{% elif i.effective_due < today %}{{ status_badge('overdue') }}{% else %}{{ status_badge('open') }}{% endif %}</td>
+</tr>{% else %}<tr><td colspan="8" class="muted">No invoices here.</td></tr>{% endfor %}
+{% if rows %}<tr class="total-row"><td colspan="5">Total ({{ rows|length }})</td><td class="num">{{ rows|sum(attribute='total')|chf(false) }}</td><td class="num">{{ rows|selectattr('status','equalto','issued')|sum(attribute='open_amount')|chf(false) }}</td><td></td></tr>{% endif %}
+</table></div>
+{% endblock %}

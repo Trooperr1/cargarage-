@@ -1,20 +1,54 @@
-{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table with context %}
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, job_table, status_badge, contact, due_badge, files_block with context %}
 {% block content %}
-<h1>{{ row.name }}</h1>
-<div class="card">
-  <p>📞 {{ row.phone }}{% if row.phone2 %} · {{ row.phone2 }}{% endif %}{% if row.address %} · 📍 {{ row.address }}{% endif %}</p>
-  {% if row.notes %}<p class="muted">{{ row.notes }}</p>{% endif %}
-  <p>Balance owed: <b class="{{ 'owed' if balance > 0 }}">{{ balance|money }}</b> · Customer since {{ row.created_at[:10] }}</p>
-  <a class="btn light" href="{{ url_for('customer_form', cid=row.id) }}">Edit</a>
-  {% if session.role == 'admin' %}
-  <form method="post" action="{{ url_for('customer_delete', cid=row.id) }}" class="inline" onsubmit="return confirm('Delete this customer?')">{{ csrf_field() }}<button class="danger">Delete</button></form>
-  {% endif %}
+<div class="titlebar"><h1>{{ row.display_name }}{% if row.kind == 'company' %} <span class="badge">company</span>{% endif %}</h1>
+<div><a class="btn" href="{{ url_for('vehicles.edit', cid=row.id) }}">+ Add vehicle</a>
+<a class="btn light" href="{{ url_for('customers.edit', cid=row.id) }}">Edit</a>
+{% if session.role == 'admin' %}<form method="post" action="{{ url_for('customers.delete', cid=row.id) }}" class="inline" onsubmit="return confirm('Delete this customer?')">{{ csrf_field() }}<button class="danger">Delete</button></form>{% endif %}</div></div>
+
+<div class="grid3">
+  <div class="card">
+    <h3>Contact</h3>
+    {% if row.contact_person %}<p>Contact: {{ row.contact_person }}</p>{% endif %}
+    <p>{{ contact(row) }}</p>
+    {% if row.email %}<p><a href="mailto:{{ row.email }}">✉ {{ row.email }}</a></p>{% endif %}
+    <p>{{ row.street or '' }} {{ row.house_number or '' }}<br>{{ row.postcode or '' }} {{ row.city or '' }} {{ row.canton or '' }}{% if row.country != 'CH' %} ({{ row.country }}){% endif %}</p>
+  </div>
+  <div class="card">
+    <h3>Account</h3>
+    <p>Customer since {{ row.created_at|d }}</p>
+    <p>Visits: <b>{{ stats.visits }}</b> · Revenue: <b>{{ stats.revenue|chf }}</b></p>
+    <p>Open: <b class="{{ 'owed' if stats.open > 0 }}">{{ stats.open|chf }}</b></p>
+    {% if row.discount_pct %}<p>Standard discount: {{ row.discount_pct|qty }}%</p>{% endif %}
+    {% if row.payment_days is not none %}<p>Payment terms: {{ row.payment_days }} days</p>{% endif %}
+    {% if row.vat_number %}<p>UID: {{ row.vat_number }}</p>{% endif %}
+  </div>
+  <div class="card">
+    <h3>Notes</h3>
+    <p>{{ row.notes or '—' }}</p>
+    {% if row.birth_date %}<p class="small">Born {{ row.birth_date|d }}</p>{% endif %}
+    {% if row.source %}<p class="small muted">Found us via: {{ row.source }}</p>{% endif %}
+    {% if not row.reminders_ok %}<p class="small owed">Does not want reminders</p>{% endif %}
+    {% for a in appts %}<p>📅 <a href="{{ url_for('appointments.edit', aid=a.id) }}">{{ a.starts_at|d }} {{ a.title }}</a></p>{% endfor %}
+  </div>
 </div>
-<h2>Cars <a class="btn small" href="{{ url_for('vehicle_form', cid=row.id) }}">+ Add car</a></h2>
-<table><tr><th>Plate</th><th>Car</th><th>Year</th><th>Color</th><th></th></tr>
-{% for v in vehicles %}<tr><td><a href="{{ url_for('vehicle_view', vid=v.id) }}">{{ v.plate }}</a></td><td>{{ v.make }} {{ v.model }}</td><td>{{ v.year or '' }}</td><td>{{ v.color or '' }}</td>
-<td><a class="btn small" href="{{ url_for('job_new', vid=v.id) }}">+ New job</a></td></tr>
-{% else %}<tr><td colspan="5" class="muted">No cars yet.</td></tr>{% endfor %}</table>
+
+<h2>Vehicles</h2>
+<div class="tablewrap"><table><tr><th>Plate</th><th>Vehicle</th><th>Year</th><th>Mileage</th><th>Next MFK</th><th>Next service</th><th></th></tr>
+{% for v in vehicles %}<tr class="{{ '' if v.active else 'muted' }}">
+<td><a href="{{ url_for('vehicles.view', vid=v.id) }}">{{ v.plate or '—' }}</a></td><td>{{ v.make }} {{ v.model }} {{ v.variant or '' }}</td><td>{{ v.year or '' }}</td>
+<td>{{ v.mileage|km }}</td>
+<td>{{ due_badge(v.mfk_next) }}</td><td>{{ due_badge(v.service_next_date) }}</td>
+<td class="nowrap"><a class="btn small" href="{{ url_for('jobs.new', vid=v.id) }}">+ Job</a> <a class="btn small light" href="{{ url_for('jobs.new', vid=v.id, kind='quote') }}">+ Quote</a></td></tr>
+{% else %}<tr><td colspan="7" class="muted">No vehicles yet.</td></tr>{% endfor %}</table></div>
+
+<h2>Invoices</h2>
+<div class="tablewrap"><table><tr><th>Number</th><th>Date</th><th>Due</th><th class="num">Total</th><th class="num">Open</th><th>Status</th></tr>
+{% for i in invoices %}<tr><td><a href="{{ url_for('invoices.view', iid=i.id) }}">{{ i.number }}</a></td><td>{{ i.issue_date|d }}</td><td>{{ i.effective_due|d }}</td>
+<td class="num">{{ i.total|chf(false) }}</td><td class="num {{ 'owed' if i.open_amount > 0 }}">{{ i.open_amount|chf(false) }}</td>
+<td>{% if i.status == 'cancelled' %}{{ status_badge('cancelled') }}{% elif i.open_amount <= 0 %}{{ status_badge('paid') }}{% elif i.effective_due < today %}{{ status_badge('overdue') }}{% else %}{{ status_badge('open') }}{% endif %}</td></tr>
+{% else %}<tr><td colspan="6" class="muted">No invoices.</td></tr>{% endfor %}</table></div>
+
 <h2>Job history</h2>
 {{ job_table(jobs, false) }}
+{{ files_block('customer', row.id, files) }}
 {% endblock %}

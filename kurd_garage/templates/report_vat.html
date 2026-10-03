@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="titlebar"><h1>VAT / MWST report <span class="muted small">{{ start|d }} – {{ end|d }}</span></h1><button class="no-print" onclick="window.print()">🖨 Print</button></div>
+{% include "_period.html" %}
+<p class="muted small">Based on invoice date ("vereinbartes Entgelt" / agreed counter-performance method). Use these numbers for your quarterly ESTV return or give them to your fiduciary (Treuhänder).</p>
+<div class="grid2">
+<div class="card"><h2>Turnover & output tax</h2>
+<table><tr><th>Rate</th><th class="num">Turnover excl. VAT</th><th class="num">VAT</th></tr>
+{% for rate, v in by_rate %}<tr><td>{{ rate|qty }}%</td><td class="num">{{ v[0]|chf }}</td><td class="num">{{ v[1]|chf }}</td></tr>{% else %}<tr><td colspan="3" class="muted">No invoices.</td></tr>{% endfor %}
+<tr class="total-row"><td>Total</td><td class="num">{{ turnover|chf }}</td><td class="num">{{ out_vat|chf }}</td></tr></table></div>
+<div class="card"><h2>Input tax (from expenses)</h2>
+<table><tr><th>Category</th><th class="num">Rate</th><th class="num">Gross</th><th class="num">VAT</th></tr>
+{% for r in input_tax %}<tr><td>{{ r.category }}</td><td class="num">{{ r.vat_rate|qty }}%</td><td class="num">{{ r.gross|chf }}</td><td class="num">{{ r.vat|chf }}</td></tr>{% else %}<tr><td colspan="4" class="muted">No expenses with VAT.</td></tr>{% endfor %}
+<tr class="total-row"><td colspan="3">Total input tax</td><td class="num">{{ in_vat|chf }}</td></tr></table></div>
+</div>
+<div class="stats"><div class="stat {{ 'warn' if out_vat - in_vat > 0 }}"><b>{{ (out_vat - in_vat)|chf }}</b><span>VAT to pay to the ESTV (output − input)</span></div></div>
+{% endblock %}

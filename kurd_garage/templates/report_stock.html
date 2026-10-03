@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="titlebar"><h1>Stock value <span class="muted small">{{ total|chf }}</span></h1><button class="no-print" onclick="window.print()">🖨 Print</button></div>
+<p class="muted small">Use this list for your yearly stock count (Inventur) on 31 December. Parts not used for 12 months tie up money.</p>
+<div class="tablewrap"><table><tr><th>Part no.</th><th>Name</th><th>Place</th><th class="num">Stock</th><th class="num">Cost</th><th class="num">Value</th><th class="num">Used 12 m</th><th>Counted</th></tr>
+{% for p in rows %}<tr class="{{ 'muted' if not p.used_12m and p.quantity }}"><td>{{ p.part_number }}</td><td><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a></td><td>{{ p.location or '' }}</td>
+<td class="num">{{ p.quantity|qty }} {{ p.unit }}</td><td class="num">{{ p.cost_price|chf(false) }}</td><td class="num">{{ p.value|round|int|chf(false) }}</td><td class="num">{{ p.used_12m|qty }}</td><td class="count-box"></td></tr>{% endfor %}
+<tr class="total-row"><td colspan="5">Total</td><td class="num">{{ total|round|int|chf(false) }}</td><td colspan="2"></td></tr></table></div>
+{% endblock %}

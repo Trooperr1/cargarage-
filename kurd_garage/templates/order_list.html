@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="titlebar"><h1>Order list <span class="muted small">{{ today|d }}</span></h1><button class="no-print" onclick="window.print()">🖨 Print</button></div>
+{% set ns = namespace(sup='__') %}
+<div class="tablewrap"><table><tr><th>Part no.</th><th>Supplier ref.</th><th>Name</th><th class="num">In stock</th><th class="num">Warn at</th><th class="num">Suggest</th></tr>
+{% for p in rows %}
+{% if p.supplier != ns.sup %}{% set ns.sup = p.supplier %}<tr class="group"><td colspan="6"><b>{{ p.supplier or 'No supplier' }}</b> {{ p.supplier_phone or '' }} {{ p.supplier_email or '' }} {{ ('· our customer no. ' ~ p.customer_number) if p.customer_number }}</td></tr>{% endif %}
+<tr><td>{{ p.part_number }}</td><td>{{ p.supplier_ref or '' }}</td><td><a href="{{ url_for('parts.view', pid=p.id) }}">{{ p.name }}</a></td><td class="num owed">{{ p.quantity|qty }}</td><td class="num">{{ p.reorder_level|qty }}</td>
+<td class="num"><b>{{ ((p.reorder_level * 2 - p.quantity) if p.reorder_level else 1)|round(0, 'ceil')|int }} {{ p.unit }}</b></td></tr>
+{% else %}<tr><td colspan="6" class="muted">Nothing to order. 👍</td></tr>{% endfor %}</table></div>
+{% endblock %}

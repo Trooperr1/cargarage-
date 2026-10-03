@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% from "_macros.html" import csrf_field, input, money, select, files_block with context %}
+{% block content %}
+<div class="titlebar"><h1>Expenses</h1><form class="inline"><input type="month" name="month" value="{{ month }}" onchange="this.form.submit()"></form></div>
+<form method="post" action="{{ url_for('expenses.index', xid=row.id) if row else url_for('expenses.index') }}" class="card">{{ csrf_field() }}
+  <h3>{{ 'Edit expense' if row else '+ New expense' }}</h3>
+  <div class="cols4">
+    {{ input('Date', 'spent_on', row, type='date', value=(none if row else today)) }}
+    {{ select('Category', 'category', categories, row, blank=false) }}
+    {{ input('Description', 'description', row, required=true, cls='span2') }}
+    {{ money('Amount incl. VAT', 'amount', row, required=true) }}
+    {{ input('VAT % included', 'vat_rate', row, value=(none if row else default_vat|qty), extra='inputmode="decimal"') }}
+    <label>Supplier<select name="supplier_id"><option value="">—</option>{% for s in suppliers %}<option value="{{ s.id }}" {{ 'selected' if row and row.supplier_id == s.id }}>{{ s.name }}</option>{% endfor %}</select></label>
+    {{ select('Paid by', 'method', payment_methods, row) }}
+    {{ input('Their invoice no.', 'reference', row) }}
+  </div>
+  <button>Save</button>{% if row %} <a href="{{ url_for('expenses.index', month=month) }}">cancel</a>{% endif %}
+</form>
+{% if row %}{{ files_block('expense', row.id, files) }}
+{% if session.role == 'admin' %}<form method="post" action="{{ url_for('expenses.delete', xid=row.id) }}" onsubmit="return confirm('Delete?')">{{ csrf_field() }}<button class="danger small">Delete expense</button></form>{% endif %}{% endif %}
+<div class="grid2">
+<div class="tablewrap"><table><tr><th>Date</th><th>Category</th><th>Description</th><th>Supplier</th><th class="num">Amount</th><th class="num">VAT</th><th></th></tr>
+{% for x in rows %}<tr><td>{{ x.spent_on|d }}</td><td>{{ x.category }}</td><td><a href="{{ url_for('expenses.index', xid=x.id, month=month) }}">{{ x.description }}</a>{% if x.files %} 📎{% endif %}</td><td>{{ x.supplier or '' }}</td>
+<td class="num">{{ x.amount|chf(false) }}</td><td class="num small">{{ x.vat_amount|chf(false) }}</td><td class="small">{{ x.reference or '' }}</td></tr>
+{% else %}<tr><td colspan="7" class="muted">No expenses this month.</td></tr>{% endfor %}
+<tr class="total-row"><td colspan="4">Total</td><td class="num">{{ total|chf(false) }}</td><td class="num">{{ vat|chf(false) }}</td><td></td></tr></table></div>
+<div class="card"><h3>By category</h3><table>{% for c, a in by_cat|dictsort(by='value', reverse=true) %}<tr><td>{{ c }}</td><td class="num">{{ a|chf }}</td></tr>{% endfor %}</table>
+<p class="small muted">Tip: photograph each receipt and attach it (open the expense → upload).</p></div>
+</div>
+{% endblock %}

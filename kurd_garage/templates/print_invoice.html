@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>{{ 'Reminder' if rem else 'Invoice' }} {{ inv.number }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body class="paper invoice-page">
+{% from "_macros.html" import print_header with context %}
+{% if inv.status == 'cancelled' %}<div class="stamp">CANCELLED</div>{% endif %}
+{{ print_header(('PAYMENT REMINDER ' ~ rem.level) if rem else 'INVOICE', inv.number, (rem.sent_on if rem else inv.issue_date)|d) }}
+<div class="address-window">{% for l in bill_to %}{{ l }}<br>{% endfor %}</div>
+{% if rem %}
+  <p>Dear customer,</p>
+  {% if rem.level == 1 %}<p>Perhaps you have overlooked our invoice {{ inv.number }} of {{ inv.issue_date|d }}. We kindly ask you to pay the open amount by <b>{{ rem.new_due|d }}</b>. If you have already paid, please ignore this letter.</p>
+  {% elif rem.level == 2 %}<p>Despite our reminder, invoice {{ inv.number }} of {{ inv.issue_date|d }} is still unpaid. Please pay the open amount by <b>{{ rem.new_due|d }}</b>.</p>
+  {% else %}<p><b>Final reminder.</b> Invoice {{ inv.number }} of {{ inv.issue_date|d }} is still unpaid. If we do not receive the payment by <b>{{ rem.new_due|d }}</b>, we will start debt collection proceedings without further notice.</p>{% endif %}
+  <table class="totals right-box">
+    <tr><td>Invoice {{ inv.number }}</td><td class="num">{{ inv.total|chf }}</td></tr>
+    {% for d in dunning if d.fee and d.level <= rem.level %}<tr><td>Reminder fee {{ d.level }}</td><td class="num">{{ d.fee|chf }}</td></tr>{% endfor %}
+    {% if inv.paid %}<tr><td>Already paid</td><td class="num">- {{ inv.paid|chf }}</td></tr>{% endif %}
+    <tr class="big"><td>Amount due</td><td class="num">{{ amount|chf }}</td></tr>
+  </table>
+{% else %}
+  <p><b>Vehicle:</b> {{ vehicle.plate or '' }} — {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.variant or '' }}{% if vehicle.vin %} · VIN {{ vehicle.vin }}{% endif %}{% if job.mileage_in %} · {{ job.mileage_in|km }}{% endif %}<br>
+  <b>Job:</b> #{{ job.id }} · {{ job.opened_at|d }}</p>
+  {% if job.diagnosis %}<p><b>Work done:</b> {{ job.diagnosis }}</p>{% else %}<p><b>Order:</b> {{ job.complaint }}</p>{% endif %}
+  {% with subtotal=inv.subtotal, rounding=inv.rounding, total=inv.total %}{% include "_print_items.html" %}{% endwith %}
+  {% if payments or inv.fees %}<table class="totals right-box">{% if inv.fees %}<tr><td>Reminder fees</td><td class="num">{{ inv.fees|chf }}</td></tr>{% endif %}{% for p in payments %}<tr><td>Paid {{ p.paid_on|d }} ({{ p.method }})</td><td class="num">- {{ p.amount|chf }}</td></tr>{% endfor %}
+  <tr class="big"><td>Open</td><td class="num">{{ inv.open_amount|chf }}</td></tr></table>{% endif %}
+  {% if job.recommendations %}<p><b>Our recommendations:</b> {{ job.recommendations }}</p>{% endif %}
+  {% if inv.notes %}<p>{{ inv.notes }}</p>{% endif %}
+  {% if amount > 0 %}<p>Payable by <b>{{ inv.due_date|d }}</b>, net.{% if S.iban %} IBAN {{ S.iban|iban }}{% if S.bank_name %} ({{ S.bank_name }}){% endif %}.{% endif %}</p>
+  {% else %}<p><b>Paid with thanks.</b></p>{% endif %}
+{% endif %}
+<p class="footer">{{ S.invoice_footer }}</p>
+{% if qr %}<div class="qr-bill">{{ qr }}</div>{% elif qr_error %}<p class="no-print flash error">{{ qr_error }}</p>{% endif %}
+<p class="no-print center"><button onclick="window.print()">🖨 Print / save as PDF</button></p>
+</body></html>

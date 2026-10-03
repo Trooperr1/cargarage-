@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% from "_macros.html" import status_badge, contact with context %}
+{% block content %}
+<div class="titlebar"><h1>🛞 Tyre hotel <span class="muted small">{{ rows|length }} sets</span></h1></div>
+<p class="muted small">To store a new set, open the vehicle and click “+ Add tyre set”.</p>
+<p class="tabs">{% for s in statuses + ['all'] %}<a href="{{ url_for('tyres.index', status=s) }}" class="{{ 'on' if status == s }}">{{ s }}</a>{% endfor %}</p>
+<form class="toolbar"><input type="hidden" name="status" value="{{ status }}"><input name="q" value="{{ request.args.q or '' }}" placeholder="Plate, customer, place, size"><button>Search</button>
+<button type="button" class="light no-print" onclick="window.print()">🖨 Print list</button></form>
+<div class="tablewrap"><table><tr><th>Place</th><th>Vehicle</th><th>Customer</th><th>Season</th><th>Tyre</th><th>Size</th><th>DOT</th><th>Tread mm</th><th>Since</th><th></th></tr>
+{% for t in rows %}{% set minimum = [t.tread_fl, t.tread_fr, t.tread_rl, t.tread_rr]|reject('none')|min if [t.tread_fl, t.tread_fr, t.tread_rl, t.tread_rr]|reject('none')|list else none %}
+<tr><td><b>{{ t.location or '—' }}</b></td><td><a href="{{ url_for('vehicles.view', vid=t.vehicle_id) }}#tyres">{{ t.plate or '—' }}</a> {{ t.make }}</td>
+<td>{{ t.customer }}<div class="small">{{ contact(t) }}</div></td><td>{{ t.season }}</td><td>{{ t.brand or '' }} {{ t.model or '' }} <span class="muted small">{{ t.rims or '' }}</span></td>
+<td>{{ t.size or '' }}</td><td>{{ t.dot or '' }}</td>
+<td class="{{ 'owed' if minimum is not none and minimum < min_tread[t.season] }}">{{ t.tread_fl|qty }}/{{ t.tread_fr|qty }}/{{ t.tread_rl|qty }}/{{ t.tread_rr|qty }}</td>
+<td>{{ t.stored_at|d }}</td><td><a href="{{ url_for('tyres.edit', tid=t.id) }}">edit</a></td></tr>
+{% else %}<tr><td colspan="10" class="muted">No tyre sets.</td></tr>{% endfor %}</table></div>
+<p class="small muted">Red tread = below legal minimum 1.6 mm (summer) or recommended 4 mm (winter). Tell the customer!</p>
+{% endblock %}
