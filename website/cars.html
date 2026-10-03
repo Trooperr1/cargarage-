@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Used cars for sale — Kurd Garage</title>
+<meta name="description" content="Checked used cars with MFK and warranty. Trade-in and financing possible.">
+<meta property="og:title" content="Used cars for sale — Kurd Garage">
+<meta property="og:description" content="Checked used cars with MFK and warranty. Trade-in and financing possible.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d0102b'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='28' fill='white' text-anchor='middle'%3EKG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="cars">
+<div id="site-header"></div>
+<main>
+<section class="page-head"><div class="wrap"><h1>Cars for sale</h1><p>Checked, serviced and with warranty. Trade-in of your old car and financing possible.</p></div></section>
+
+<section><div class="wrap">
+  <form class="filters card" id="car-filters" onsubmit="return false">
+    <label class="grow">Search<input id="f-q" type="search" placeholder="e.g. Golf, 4x4, automatic"></label>
+    <label>Make<select id="f-make"></select></label>
+    <label>Fuel<select id="f-fuel"></select></label>
+    <label>Gearbox<select id="f-gear"><option value="">All</option><option>Manual</option><option>Automatic</option></select></label>
+    <label>Max price<select id="f-price"><option value="">Any</option><option value="10000">10'000</option><option value="15000">15'000</option><option value="20000">20'000</option><option value="30000">30'000</option><option value="50000">50'000</option></select></label>
+    <label>Max km<select id="f-km"><option value="">Any</option><option value="50000">50'000</option><option value="100000">100'000</option><option value="150000">150'000</option></select></label>
+    <label>Sort<select id="f-sort"><option value="new">Newest first</option><option value="price-asc">Price low → high</option><option value="price-desc">Price high → low</option><option value="km">Lowest km</option><option value="year">Newest year</option></select></label>
+    <label class="check"><input id="f-sold" type="checkbox"> show sold</label>
+    <button type="button" id="f-reset" class="btn btn-ghost btn-small">Reset</button>
+  </form>
+  <p class="muted"><b id="car-count"></b> found</p>
+  <div class="grid3" id="car-list"></div>
+</div></section>
+<section class="alt"><div class="wrap grid2">
+  <div class="card"><span class="eyebrow">Sell your car</span><h2>We buy your car</h2><p>Send us photos, km and the registration by WhatsApp — you get a fair offer quickly, also as trade-in.</p>
+    <a class="btn btn-wa" data-wa="Hello, I would like to sell my car: (make, model, year, km)">Get an offer on WhatsApp</a></div>
+  <div class="card"><span class="eyebrow">Car search</span><h2>Not the right car?</h2><p>Tell us what you are looking for (budget, size, fuel). We find and check the right car for you.</p>
+    <a class="btn" href="contact.html">Tell us what you need</a></div>
+</div></section>
+</main>
+<div id="site-footer"></div>
+<script src="data/config.js"></script>
+<script src="data/services.js"></script>
+<script src="data/cars.js"></script>
+<script src="data/parts.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

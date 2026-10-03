@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parts shop — Kurd Garage</title>
+<meta name="description" content="Car parts and accessories: oil, filters, brakes, batteries, bulbs, wipers and tyres. Pick up or fitting.">
+<meta property="og:title" content="Parts shop — Kurd Garage">
+<meta property="og:description" content="Car parts and accessories: oil, filters, brakes, batteries, bulbs, wipers and tyres. Pick up or fitting.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d0102b'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='28' fill='white' text-anchor='middle'%3EKG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="parts">
+<div id="site-header"></div>
+<main>
+<section class="page-head"><div class="wrap"><h1>Parts shop</h1><p>Put the parts in your basket and send the order by WhatsApp or e-mail. Pick up in the garage, or we fit them for you.</p></div></section>
+
+<section><div class="wrap shop">
+  <aside class="cat-nav" id="part-cats"></aside>
+  <div>
+    <div class="shop-tools"><input id="p-q" type="search" placeholder="Search part, brand or car (e.g. Golf, H7, 5W-30)">
+      <label class="check"><input id="p-stock" type="checkbox"> in stock only</label><span class="muted" id="part-count"></span></div>
+    <div class="part-list" id="part-list"></div>
+    <p class="muted small top-gap">Can't find your part? We order almost every original or quality part within 1–2 days — just ask.</p>
+  </div>
+  <aside class="card basket" id="basket">
+    <h3>🛒 Your basket</h3>
+    <div id="basket-items"></div>
+    <div class="basket-total"><span>Total incl. VAT</span><span id="basket-total">CHF 0.–</span></div>
+    <form id="basket-form" class="form-grid" hidden>
+      <label class="full">Your name *<input name="name" required autocomplete="name"></label>
+      <label class="full">Phone *<input name="phone" required type="tel" autocomplete="tel"></label>
+      <label class="full">Your car (for checking the part)<input name="car" placeholder="e.g. VW Golf 7, 2017"></label>
+      <label class="full">Delivery<select name="delivery"><option>Pick up in the garage</option><option>Pick up and fit (we install it)</option><option>Send by post</option></select></label>
+      <label class="full">Note<textarea name="note" rows="2"></textarea></label>
+      <button class="btn btn-wa full" value="wa">Send order by WhatsApp</button>
+      <button class="btn btn-ghost full" value="mail">Send by e-mail</button>
+      <button type="button" class="btn btn-ghost btn-small full" id="basket-clear">Empty basket</button>
+    </form>
+    <p class="done" id="basket-done" hidden>Thank you! We check the parts and confirm price and pickup time.</p>
+  </aside>
+</div></section>
+</main>
+<div id="site-footer"></div>
+<script src="data/config.js"></script>
+<script src="data/services.js"></script>
+<script src="data/cars.js"></script>
+<script src="data/parts.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

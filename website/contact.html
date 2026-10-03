@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact & directions — Kurd Garage</title>
+<meta name="description" content="Address, opening hours, phone, WhatsApp and directions.">
+<meta property="og:title" content="Contact & directions — Kurd Garage">
+<meta property="og:description" content="Address, opening hours, phone, WhatsApp and directions.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23d0102b'/%3E%3Ctext x='32' y='42' font-family='Arial' font-weight='900' font-size='28' fill='white' text-anchor='middle'%3EKG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="contact">
+<div id="site-header"></div>
+<main>
+<section class="page-head"><div class="wrap"><h1>Contact & directions</h1><p>Call, write or visit us — we are happy to help.</p></div></section>
+
+<section><div class="wrap grid2">
+  <div>
+    <div class="card"><span class="pill" id="open-state"></span>
+      <h2 class="top-gap" data-g="name"></h2>
+      <p><span data-g="street"></span><br><span data-g="postcode"></span> <span data-g="city"></span></p>
+      <div class="btn-row"><a class="btn" data-tel="">📞 <span data-g="phone"></span></a><a class="btn btn-wa" data-wa="">WhatsApp</a><a class="btn btn-ghost" data-mail="">✉ <span data-g="email"></span></a></div>
+      <h3 class="top-gap">Opening hours</h3><table class="hours" id="contact-hours"></table>
+    </div>
+    <form class="card form-grid top-gap" id="contact-form">
+      <h3 class="full">Write us</h3>
+      <label>Name *<input name="name" required></label>
+      <label>Phone *<input name="phone" type="tel" required></label>
+      <label class="full">E-mail<input name="email" type="email"></label>
+      <label class="full">Message *<textarea name="message" rows="4" required></textarea></label>
+      <button class="btn btn-wa" value="wa">Send by WhatsApp</button><button class="btn btn-ghost" value="mail">Send by e-mail</button>
+    </form>
+  </div>
+  <div><div class="map" id="map"></div><p class="top-gap"><a class="btn btn-ghost" id="route" target="_blank" rel="noopener">🧭 Directions with Google Maps</a></p>
+    <div class="card top-gap"><h3>Parking</h3><p class="muted">Free customer parking in front of the garage.</p></div></div>
+</div></section>
+</main>
+<div id="site-footer"></div>
+<script src="data/config.js"></script>
+<script src="data/services.js"></script>
+<script src="data/cars.js"></script>
+<script src="data/parts.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
