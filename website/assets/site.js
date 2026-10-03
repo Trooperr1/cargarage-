@@ -91,9 +91,9 @@
     }).join("");
     var open = openNow();
     return '<div class="topbar"><div class="wrap">' +
-      '<span>' + ICON.pin + esc(G.street) + ", " + esc(G.postcode) + " " + esc(G.city) + "</span>" +
+      (G.street ? '<span>' + ICON.pin + esc(G.street) + ", " + esc(G.postcode) + " " + esc(G.city) + "</span>" : "<span></span>") +
       '<span class="' + (open ? "open" : "closed") + '">' + ICON.clock + (open ? "Open now" : "Closed now") + " · today " + hoursText(new Date().getDay()) + "</span>" +
-      '<a href="' + telLink() + '">' + ICON.phone + esc(G.phone) + "</a></div></div>" +
+      (G.phone ? '<a href="' + telLink() + '">' + ICON.phone + esc(G.phone) + "</a>" : "<span></span>") + "</div></div>" +
       '<header class="site-header"><div class="wrap">' +
       '<a class="logo" href="index.html"><span class="logo-mark">KG</span><span><b>' + esc(G.name) + "</b><small>" + esc(G.slogan) + "</small></span></a>" +
       '<button class="burger" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>' +

@@ -373,6 +373,16 @@ class Website(Base):
         self.assertIn(b'"status": "sold"', self.get("/website/preview/data/cars.js").data)
         self.post(f"/website/cars/{self.one('SELECT MAX(id) FROM web_cars')}/delete")
 
+    def test_missing_website_folder_is_reported(self):
+        import views.website as w
+        real = w.TEMPLATE_DIR
+        w.TEMPLATE_DIR = "/nonexistent/website"
+        try:
+            r = self.c.get("/website/preview/cars.html", follow_redirects=True)
+            self.assertIn(b"could not be updated", r.data)
+        finally:
+            w.TEMPLATE_DIR = real
+
     def test_upgrade_old_database(self):
         """A version-2 database (before the website section) is upgraded without losing data."""
         import sqlite3

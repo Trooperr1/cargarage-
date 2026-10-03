@@ -342,11 +342,23 @@ def build():
     if not os.path.isdir(TEMPLATE_DIR):
         raise ValueError("The 'website' folder is missing next to the 'kurd_garage' folder. Download the program again.")
     garage, services, cars, parts, images = site_data()
-    if os.path.isdir(BUILD_DIR):
-        shutil.rmtree(BUILD_DIR)
-    shutil.copytree(TEMPLATE_DIR, BUILD_DIR, ignore=shutil.ignore_patterns("data", "images", "README.md"))
+    # Pages, styles and data are written fresh; photos are only copied when new (fast to rebuild often).
+    os.makedirs(BUILD_DIR, exist_ok=True)
+    for entry in os.listdir(BUILD_DIR):
+        if entry != "images":
+            full = os.path.join(BUILD_DIR, entry)
+            shutil.rmtree(full) if os.path.isdir(full) else os.remove(full)
+    for entry in os.listdir(TEMPLATE_DIR):
+        if entry in ("data", "images", "README.md"):
+            continue
+        src = os.path.join(TEMPLATE_DIR, entry)
+        if os.path.isdir(src):
+            shutil.copytree(src, os.path.join(BUILD_DIR, entry))
+        else:
+            shutil.copy2(src, os.path.join(BUILD_DIR, entry))
     os.makedirs(os.path.join(BUILD_DIR, "data"))
-    os.makedirs(os.path.join(BUILD_DIR, "images"))
+    image_dir = os.path.join(BUILD_DIR, "images")
+    os.makedirs(image_dir, exist_ok=True)
 
     def write(name, body):
         with open(os.path.join(BUILD_DIR, "data", name), "w", encoding="utf-8") as fh:
@@ -356,10 +368,14 @@ def build():
     write("services.js", f"window.SERVICES = {dump(services)};\n")
     write("cars.js", f"window.CARS = {dump(cars)};\n")
     write("parts.js", f"window.PART_CATEGORIES = {dump(PART_CATEGORIES)};\nwindow.PARTS = {dump(parts)};\n")
-    for name in images:
-        src = os.path.join(db.UPLOAD_DIR, name)
-        if os.path.exists(src):
-            shutil.copy2(src, os.path.join(BUILD_DIR, "images", name))
+    wanted = set(images)
+    for name in os.listdir(image_dir):
+        if name not in wanted:
+            os.remove(os.path.join(image_dir, name))
+    for name in wanted:
+        src, dst = os.path.join(db.UPLOAD_DIR, name), os.path.join(image_dir, name)
+        if os.path.exists(src) and not os.path.exists(dst):
+            shutil.copy2(src, dst)
     name = settings().get("garage_name") or "Kurd Garage"
     for html in os.listdir(BUILD_DIR):
         if html.endswith(".html"):
@@ -375,11 +391,12 @@ def build():
 
 
 def auto_build():
-    """Keep the preview up to date after every change (problems are shown when building by hand)."""
+    """Keep the preview up to date after every change. Shows a message if it cannot be built."""
     try:
         build()
         return True
-    except (ValueError, OSError):
+    except (ValueError, OSError) as err:
+        error(f"The website could not be updated: {err}")
         return False
 
 
@@ -407,12 +424,14 @@ def build_site():
 @bp.route("/preview/<path:filename>")
 @login_required
 def preview(filename="index.html"):
-    if request.path.rstrip("/").endswith("/preview"):
-        auto_build()   # opening the preview always shows the newest data (also stock and prices)
+    if filename.endswith(".html") and not auto_build():   # every preview page shows the newest data
+        return redirect(url_for("website.index"))
     if not os.path.isdir(BUILD_DIR):
         error("Build the website first")
         return redirect(url_for("website.index"))
-    return send_from_directory(BUILD_DIR, filename)
+    resp = send_from_directory(BUILD_DIR, filename)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @bp.route("/download")
